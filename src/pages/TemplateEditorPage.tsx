@@ -313,32 +313,31 @@ export default function TemplateEditorPage() {
             </span>
             <button
               type="button"
-              onClick={async () => {
-                try {
-                  const items = await navigator.clipboard.read();
-                  for (const item of items) {
-                    if (item.types.includes("text/html")) {
-                      const blob = await item.getType("text/html");
-                      const html = await blob.text();
-                      setBodyHtml(html);
-                      return;
-                    }
-                  }
-                  const text = await navigator.clipboard.readText();
-                  if (text) setBodyHtml(text);
-                } catch {
-                  // Fallback to readText if clipboard.read() is denied
-                  try {
-                    const text = await navigator.clipboard.readText();
-                    if (text) setBodyHtml(text);
-                  } catch {
-                    // Clipboard access denied
-                  }
-                }
+              onClick={() => {
+                // Simple HTML formatter: add newlines after closing tags and indent
+                const formatted = bodyHtml
+                  .replace(/></g, ">\n<")
+                  .replace(/\n\s*/g, "\n")
+                  .split("\n")
+                  .reduce<{ lines: string[]; indent: number }>(
+                    (acc, line) => {
+                      const trimmed = line.trim();
+                      if (!trimmed) return acc;
+                      const isClosing = /^<\//.test(trimmed);
+                      const isSelfClosing = /\/>$/.test(trimmed) || /^<(br|hr|img|input|meta|link)\b/i.test(trimmed);
+                      if (isClosing) acc.indent = Math.max(0, acc.indent - 1);
+                      acc.lines.push("  ".repeat(acc.indent) + trimmed);
+                      if (!isClosing && !isSelfClosing && /^<[^/!]/.test(trimmed)) acc.indent++;
+                      return acc;
+                    },
+                    { lines: [], indent: 0 },
+                  )
+                  .lines.join("\n");
+                setBodyHtml(formatted);
               }}
               className="text-[10px] text-text-tertiary hover:text-text-secondary transition-colors"
             >
-              Paste HTML from Clipboard
+              Format HTML
             </button>
           </div>
           <div className="flex-1 min-h-0">

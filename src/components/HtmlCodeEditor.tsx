@@ -39,6 +39,20 @@ export default function HtmlCodeEditor({
         oneDark,
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         keymap.of([...defaultKeymap, ...historyKeymap]),
+        EditorView.domEventHandlers({
+          paste(event, view) {
+            const htmlData = event.clipboardData?.getData("text/html");
+            if (htmlData) {
+              event.preventDefault();
+              const { from, to } = view.state.selection.main;
+              view.dispatch({
+                changes: { from, to, insert: htmlData },
+              });
+              return true;
+            }
+            return false;
+          },
+        }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChangeRef.current(update.state.doc.toString());
