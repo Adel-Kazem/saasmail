@@ -36,15 +36,15 @@ export async function handleScheduled(
 
   if (dueEmails.length === 0) return;
 
-  // Push to queue and mark as queued
+  // Mark as queued first (prevents re-pickup on crash), then push to queue
   for (const email of dueEmails) {
-    const message: SequenceEmailMessage = { sequenceEmailId: email.id };
-    await env.EMAIL_QUEUE.send(message);
-
     await db
       .update(sequenceEmails)
       .set({ status: "queued" })
       .where(eq(sequenceEmails.id, email.id));
+
+    const message: SequenceEmailMessage = { sequenceEmailId: email.id };
+    await env.EMAIL_QUEUE.send(message);
   }
 
   console.log(`Queued ${dueEmails.length} sequence emails`);

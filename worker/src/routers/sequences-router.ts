@@ -392,31 +392,25 @@ sequencesRouter.openapi(enrollRoute, async (c) => {
 
   // Create outbox emails with computed schedule
   const baseTime = snapToNextHour(now);
-  const scheduledEmails = [];
-
-  for (const step of activeSteps) {
+  const scheduledEmails = activeSteps.map((step) => {
     const delayHours =
       step.order.toString() in delayOverrides
         ? delayOverrides[step.order.toString()]
         : step.delayHours;
 
-    const scheduledAt = baseTime + delayHours * 3600;
-    const emailId = nanoid();
-
-    const emailRow = {
-      id: emailId,
+    return {
+      id: nanoid(),
       enrollmentId,
       stepOrder: step.order,
       templateSlug: step.templateSlug,
-      scheduledAt,
+      scheduledAt: baseTime + delayHours * 3600,
       status: "pending",
       sentAt: null,
       sentEmailId: null,
     };
+  });
 
-    await db.insert(sequenceEmails).values(emailRow);
-    scheduledEmails.push(emailRow);
-  }
+  await db.insert(sequenceEmails).values(scheduledEmails);
 
   return c.json(
     {
