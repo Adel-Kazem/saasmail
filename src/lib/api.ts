@@ -262,3 +262,26 @@ export async function acceptInvite(data: {
 export async function fetchPasskeyStatus(): Promise<{ hasPasskey: boolean }> {
   return apiFetch<{ hasPasskey: boolean }>("/api/user/passkeys");
 }
+
+// --- API Keys ---
+
+export interface ApiKeyInfo {
+  prefix: string;
+  createdAt: number;
+}
+
+export async function fetchApiKeyInfo(): Promise<{ key: ApiKeyInfo | null }> {
+  return apiFetch<{ key: ApiKeyInfo | null }>("/api/api-keys");
+}
+
+export async function generateApiKey(): Promise<{
+  key: string;
+  prefix: string;
+  createdAt: number;
+}> {
+  return apiFetch("/api/api-keys", { method: "POST" });
+}
+
+export async function revokeApiKey(): Promise<{ success: boolean }> {
+  return apiFetch("/api/api-keys", { method: "DELETE" });
+}
