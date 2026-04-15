@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
@@ -35,7 +35,6 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
     useState<SenderEnrollmentInfo | null>(null);
   const [htmlPreviewEmail, setHtmlPreviewEmail] = useState<Email | null>(null);
   const [recipientFilter, setRecipientFilter] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [replyToEmailId, setReplyToEmailId] = useState<string | null>(null);
   const [threadOpen, setThreadOpen] = useState(false);
 
