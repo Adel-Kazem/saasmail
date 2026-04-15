@@ -9,11 +9,18 @@ import { schema } from "../db/schema";
 import { oauthAccessTokens } from "../db/auth.schema";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 
-export function createAuth(env?: CloudflareBindings) {
+export function createAuth(
+  env?: CloudflareBindings,
+  _unused?: undefined,
+  host?: string,
+) {
   const db = env ? drizzle(env.DB, { schema, logger: true }) : ({} as any);
+  const baseURL = host
+    ? `https://${host}`
+    : env?.BASE_URL || "http://localhost:8080";
 
   return betterAuth({
-    baseURL: env?.BASE_URL || "http://localhost:8080",
+    baseURL,
     database: drizzleAdapter(db, {
       provider: "sqlite",
       usePlural: true,

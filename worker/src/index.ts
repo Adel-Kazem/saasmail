@@ -4,9 +4,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { injectDb } from "./db/middleware";
 import { createAuth } from "./auth";
-import {
-  oauthProviderAuthServerMetadata,
-} from "@better-auth/oauth-provider";
+import type { Context } from "hono";
 import { apiKeys } from "./db/api-keys.schema";
 import { users } from "./db/auth.schema";
 import { eq } from "drizzle-orm";
@@ -156,34 +154,45 @@ app.route("/mcp", mcpRouter);
 // (Claude.ai, Claude Code, GitHub Copilot) can discover the authorization
 // server and protected-resource endpoints.
 //
-// /.well-known/oauth-authorization-server: forwarded through the
-// oauthProviderAuthServerMetadata helper so the dynamic baseURL config is
-// resolved from the real request — otherwise endpoint URLs would be wrong.
-// RFC 8414: when the issuer includes a path (e.g. /api/auth), clients may
-// request /.well-known/oauth-authorization-server/api/auth. Serve the same
-// metadata for both the root and issuer-path variants.
-app.get("/.well-known/oauth-authorization-server/*", async (c) => {
-  const auth = createAuth(c.env);
-  return oauthProviderAuthServerMetadata(auth)(c.req.raw);
-});
-app.get("/.well-known/oauth-authorization-server", async (c) => {
-  const auth = createAuth(c.env);
-  return oauthProviderAuthServerMetadata(auth)(c.req.raw);
-});
-
+// /.well-known/oauth-authorization-server: forwarded through auth.handler to
+// the oauthProvider's /.well-known/openid-configuration endpoint. We must go
+// through auth.handler (not call auth.api directly) so that the dynamic
+// baseURL config is resolved from the real request host — otherwise the issuer
+// and endpoint URLs would be wrong.
+//
 // /.well-known/oauth-protected-resource: oauthProvider does not expose this
 // RFC 9728 endpoint, so we build the response ourselves. The resource and
 // authorization_servers fields are derived from the request origin so they
 // track whichever domain the client connects to.
-app.get("/.well-known/oauth-protected-resource", (c) => {
-  const origin = new URL(c.req.url).origin;
-  return c.json({
+async function forwardToOAuthDiscovery(c: Context<{
+  Bindings: CloudflareBindings;
+  Variables: Variables;
+}>): Promise<Response> {
+  const url = new URL(c.req.raw.url);
+  const auth = createAuth(c.env, undefined, url.host);
+  const forwardedUrl = new URL(
+    "/api/auth/.well-known/openid-configuration",
+    url.origin,
+  );
+  const forwardedRequest = new Request(forwardedUrl, c.req.raw);
+  return auth.handler(forwardedRequest);
+}
+
+async function serveOAuthProtectedResource(c: Context<{
+  Bindings: CloudflareBindings;
+  Variables: Variables;
+}>): Promise<Response> {
+  const origin = new URL(c.req.raw.url).origin;
+  return Response.json({
     resource: origin,
     authorization_servers: [origin],
     bearer_methods_supported: ["header"],
     scopes_supported: ["openid", "profile", "email", "offline_access"],
   });
-});
+}
+
+app.get("/.well-known/oauth-authorization-server", forwardToOAuthDiscovery);
+app.get("/.well-known/oauth-protected-resource", serveOAuthProtectedResource);
 
 // Forward remaining well-known paths (e.g. openid-configuration) to betterauth
 app.all("/.well-known/*", (c) => {
