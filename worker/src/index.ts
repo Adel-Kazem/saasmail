@@ -11,6 +11,7 @@ import { sendRouter } from "./routers/send-router";
 import { attachmentsRouter } from "./routers/attachments-router";
 import { statsRouter } from "./routers/stats-router";
 import { setupRouter } from "./routers/setup-router";
+import { emailTemplatesRouter } from "./routers/email-templates-router";
 import type { Variables } from "./variables";
 
 const app = new OpenAPIHono<{
@@ -62,6 +63,7 @@ app.route("/api/send", sendRouter);
 app.route("/api/attachments", attachmentsRouter);
 app.route("/api/stats", statsRouter);
 app.route("/api/setup", setupRouter);
+app.route("/api/email-templates", emailTemplatesRouter);
 
 // Health check (no auth)
 app.get("/api/health", (c) => c.json({ status: "ok" }));
