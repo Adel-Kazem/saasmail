@@ -17,5 +17,6 @@ export const sequenceEmails = sqliteTable(
       table.status,
       table.scheduledAt,
     ),
+    index("seq_emails_enrollment_id_idx").on(table.enrollmentId),
   ],
 );
