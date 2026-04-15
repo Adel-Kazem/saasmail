@@ -8,12 +8,6 @@ import type { Sender } from "@/lib/api";
 export default function InboxPage() {
   const [selectedSender, setSelectedSender] = useState<Sender | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
-  const [replyToEmailId, setReplyToEmailId] = useState<string | null>(null);
-
-  function handleReply(emailId: string) {
-    setReplyToEmailId(emailId);
-    setComposeOpen(true);
-  }
 
   return (
     <>
@@ -46,7 +40,7 @@ export default function InboxPage() {
               Back
             </button>
             <div className="flex-1 overflow-hidden">
-              <SenderDetail sender={selectedSender} onReply={handleReply} />
+              <SenderDetail sender={selectedSender} />
             </div>
           </div>
         ) : (
@@ -59,7 +53,6 @@ export default function InboxPage() {
       <ComposeModal
         open={composeOpen}
         onClose={() => setComposeOpen(false)}
-        replyToEmailId={replyToEmailId}
       />
     </>
   );
