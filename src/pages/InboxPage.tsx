@@ -48,6 +48,12 @@ export default function InboxPage() {
           >
             Templates
           </Link>
+          <Link
+            to="/api-keys"
+            className="text-sm text-neutral-500 hover:text-neutral-700"
+          >
+            API
+          </Link>
           <Button size="sm" onClick={handleCompose}>
             Compose
           </Button>

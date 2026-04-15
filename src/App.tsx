@@ -11,6 +11,7 @@ import TemplateEditorPage from "@/pages/TemplateEditorPage";
 import SetupPasskeyPage from "@/pages/SetupPasskeyPage";
 import InviteAcceptPage from "@/pages/InviteAcceptPage";
 import AdminUsersPage from "@/pages/AdminUsersPage";
+import ApiKeysPage from "@/pages/ApiKeysPage";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +95,14 @@ function App() {
             element={
               <AuthGuard>
                 <TemplateEditorPage />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/api-keys"
+            element={
+              <AuthGuard>
+                <ApiKeysPage />
               </AuthGuard>
             }
           />
