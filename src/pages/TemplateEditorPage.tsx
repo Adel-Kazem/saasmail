@@ -307,10 +307,39 @@ export default function TemplateEditorPage() {
       <div className="flex-1 min-h-0 flex">
         {/* HTML Source */}
         <div className="flex-1 flex flex-col min-w-0 border-r border-border-dark">
-          <div className="shrink-0 px-3 py-1.5 border-b border-border-dark bg-panel">
+          <div className="shrink-0 px-3 py-1.5 border-b border-border-dark bg-panel flex items-center justify-between">
             <span className="text-[10px] text-text-tertiary uppercase tracking-wider font-medium">
               HTML Source
             </span>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const items = await navigator.clipboard.read();
+                  for (const item of items) {
+                    if (item.types.includes("text/html")) {
+                      const blob = await item.getType("text/html");
+                      const html = await blob.text();
+                      setBodyHtml(html);
+                      return;
+                    }
+                  }
+                  const text = await navigator.clipboard.readText();
+                  if (text) setBodyHtml(text);
+                } catch {
+                  // Fallback to readText if clipboard.read() is denied
+                  try {
+                    const text = await navigator.clipboard.readText();
+                    if (text) setBodyHtml(text);
+                  } catch {
+                    // Clipboard access denied
+                  }
+                }
+              }}
+              className="text-[10px] text-text-tertiary hover:text-text-secondary transition-colors"
+            >
+              Paste HTML from Clipboard
+            </button>
           </div>
           <div className="flex-1 min-h-0">
             <HtmlCodeEditor
