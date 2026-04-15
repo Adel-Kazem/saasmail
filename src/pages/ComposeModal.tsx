@@ -8,7 +8,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import TiptapEditor from "@/components/TiptapEditor";
 import { sendEmail, replyToEmail, fetchEmail } from "@/lib/api";
 
 interface ComposeModalProps {
@@ -24,7 +24,7 @@ export default function ComposeModal({
 }: ComposeModalProps) {
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [bodyHtml, setBodyHtml] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const isReply = replyToEmailId !== null;
@@ -33,7 +33,7 @@ export default function ComposeModal({
     if (!open) {
       setTo("");
       setSubject("");
-      setBody("");
+      setBodyHtml("");
       setError("");
       return;
     }
@@ -55,15 +55,13 @@ export default function ComposeModal({
     try {
       if (isReply) {
         await replyToEmail(replyToEmailId!, {
-          bodyHtml: `<p>${body.replace(/\n/g, "<br/>")}</p>`,
-          bodyText: body,
+          bodyHtml,
         });
       } else {
         await sendEmail({
           to,
           subject,
-          bodyHtml: `<p>${body.replace(/\n/g, "<br/>")}</p>`,
-          bodyText: body,
+          bodyHtml,
         });
       }
       onClose();
@@ -104,14 +102,8 @@ export default function ComposeModal({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="body">Message</Label>
-            <Textarea
-              id="body"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={8}
-              required
-            />
+            <Label>Message</Label>
+            <TiptapEditor content={bodyHtml} onUpdate={setBodyHtml} />
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <div className="flex justify-end gap-2">
