@@ -169,3 +169,96 @@ export async function deleteTemplate(
     method: "DELETE",
   });
 }
+
+// --- User Management Types ---
+
+export interface Invite {
+  id: string;
+  token: string;
+  role: string;
+  email: string | null;
+  expiresAt: number;
+  usedBy: string | null;
+  usedAt: number | null;
+  createdBy: string;
+  createdAt: number;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string | null;
+  createdAt: number;
+  hasPasskey: boolean;
+}
+
+export interface InviteInfo {
+  valid: boolean;
+  role?: string;
+  email?: string | null;
+}
+
+// --- Admin API ---
+
+export async function createInvite(data: {
+  role: "admin" | "member";
+  email?: string;
+  expiresInDays?: number;
+}): Promise<Invite> {
+  return apiFetch<Invite>("/api/admin/invites", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchInvites(): Promise<Invite[]> {
+  return apiFetch<Invite[]>("/api/admin/invites");
+}
+
+export async function fetchUsers(): Promise<User[]> {
+  return apiFetch<User[]>("/api/admin/users");
+}
+
+export async function updateUserRole(
+  id: string,
+  role: "admin" | "member",
+): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/api/admin/users/${id}/role`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function deleteUser(id: string): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/api/admin/users/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// --- Public Invite API ---
+
+export async function validateInvite(token: string): Promise<InviteInfo> {
+  return apiFetch<InviteInfo>(`/api/invites/${token}`);
+}
+
+export async function acceptInvite(data: {
+  token: string;
+  name: string;
+  email: string;
+  password: string;
+}): Promise<{ success: boolean; userId: string }> {
+  return apiFetch<{ success: boolean; userId: string }>("/api/invites/accept", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+// --- User API ---
+
+export async function fetchPasskeyStatus(): Promise<{ hasPasskey: boolean }> {
+  return apiFetch<{ hasPasskey: boolean }>("/api/user/passkeys");
+}
