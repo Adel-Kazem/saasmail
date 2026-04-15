@@ -26,7 +26,7 @@ export default function ThreadSidebar({
   const chronological = [...emails].reverse();
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col border-l border-border-dark bg-panel">
+    <div className="flex h-full w-80 shrink-0 flex-col border-l border-border-dark bg-panel max-md:absolute max-md:right-0 max-md:top-0 max-md:z-10 max-md:w-full max-md:border-l-0">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border-dark px-4 py-3">
         <h3 className="text-xs font-semibold text-text-primary">Thread</h3>

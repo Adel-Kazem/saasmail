@@ -174,7 +174,7 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
       </div>
 
       {/* Conversation — main email + thread sidebar */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         {/* Main email area */}
         <div className="flex flex-1 flex-col min-w-0">
           <ScrollArea className="flex-1">
