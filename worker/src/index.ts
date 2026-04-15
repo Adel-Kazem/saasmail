@@ -7,6 +7,7 @@ import { createAuth } from "./auth";
 import { apiKeys } from "./db/api-keys.schema";
 import { users } from "./db/auth.schema";
 import { eq } from "drizzle-orm";
+import { hashKey } from "./lib/crypto";
 import { handleEmail } from "./email-handler";
 import { sendersRouter } from "./routers/senders-router";
 import { emailsRouter } from "./routers/emails-router";
@@ -69,13 +70,7 @@ app.use("/api/*", async (c, next) => {
   const authHeader = c.req.header("Authorization");
   if (authHeader?.startsWith("Bearer sk_")) {
     const token = authHeader.slice(7); // Remove "Bearer "
-    const encoder = new TextEncoder();
-    const data = encoder.encode(token);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const tokenHash = hashArray
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    const tokenHash = await hashKey(token);
 
     const db = c.get("db");
     const rows = await db

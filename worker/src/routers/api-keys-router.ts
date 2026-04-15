@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { apiKeys } from "../db/api-keys.schema";
 import { json200Response, json201Response } from "../lib/helpers";
+import { hashKey } from "../lib/crypto";
 import type { Variables } from "../variables";
 
 export const apiKeysRouter = new OpenAPIHono<{
@@ -10,16 +11,8 @@ export const apiKeysRouter = new OpenAPIHono<{
   Variables: Variables;
 }>();
 
-async function hashKey(key: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(key);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 function generateApiKey(): string {
-  const bytes = new Uint8Array(20);
+  const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   const hex = Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, "0"))
