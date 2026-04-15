@@ -410,3 +410,21 @@ export async function fetchSequenceEnrollments(
 ): Promise<EnrollmentWithDetails[]> {
   return apiFetch(`/api/sequences/${sequenceId}/enrollments`);
 }
+
+// --- OAuth Apps ---
+
+export interface OAuthApp {
+  clientId: string;
+  name: string | null;
+  createdAt: number;
+}
+
+export async function fetchOAuthApps(): Promise<OAuthApp[]> {
+  return apiFetch("/api/oauth-apps");
+}
+
+export async function revokeOAuthApp(
+  clientId: string
+): Promise<{ success: boolean }> {
+  return apiFetch(`/api/oauth-apps/${clientId}`, { method: "DELETE" });
+}
