@@ -12,7 +12,11 @@ import { attachmentsRouter } from "./routers/attachments-router";
 import { statsRouter } from "./routers/stats-router";
 import { setupRouter } from "./routers/setup-router";
 import { emailTemplatesRouter } from "./routers/email-templates-router";
+import { adminRouter } from "./routers/admin-router";
+import { invitesRouter } from "./routers/invites-router";
+import { userRouter } from "./routers/user-router";
 import type { Variables } from "./variables";
+import type { MiddlewareHandler } from "hono";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -41,6 +45,7 @@ app.use("/api/*", async (c, next) => {
   if (
     c.req.path.startsWith("/api/auth") ||
     c.req.path.startsWith("/api/setup") ||
+    c.req.path.startsWith("/api/invites") ||
     c.req.path === "/api/health"
   ) {
     return next();
@@ -56,6 +61,18 @@ app.use("/api/*", async (c, next) => {
   return next();
 });
 
+// Admin guard middleware
+const requireAdmin: MiddlewareHandler<{
+  Bindings: CloudflareBindings;
+  Variables: Variables;
+}> = async (c, next) => {
+  const user = c.get("user");
+  if (!user || user.role !== "admin") {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+  return next();
+};
+
 // API Routes
 app.route("/api/senders", sendersRouter);
 app.route("/api/emails", emailsRouter);
@@ -64,6 +81,12 @@ app.route("/api/attachments", attachmentsRouter);
 app.route("/api/stats", statsRouter);
 app.route("/api/setup", setupRouter);
 app.route("/api/email-templates", emailTemplatesRouter);
+app.route("/api/user", userRouter);
+app.route("/api/invites", invitesRouter);
+
+// Admin routes (require admin role)
+app.use("/api/admin/*", requireAdmin);
+app.route("/api/admin", adminRouter);
 
 // Health check (no auth)
 app.get("/api/health", (c) => c.json({ status: "ok" }));
