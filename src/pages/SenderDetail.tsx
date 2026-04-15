@@ -18,13 +18,13 @@ import EnrollSequenceModal from "@/components/EnrollSequenceModal";
 import SequenceStatus from "@/components/SequenceStatus";
 import MessageBubble from "@/components/MessageBubble";
 import EmailHtmlModal from "@/components/EmailHtmlModal";
+import ReplyComposer from "@/components/ReplyComposer";
 
 interface SenderDetailProps {
   sender: Sender;
-  onReply: (emailId: string) => void;
 }
 
-export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
+export default function SenderDetail({ sender }: SenderDetailProps) {
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrollModalOpen, setEnrollModalOpen] = useState(false);
@@ -33,6 +33,7 @@ export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
   const [htmlPreviewEmail, setHtmlPreviewEmail] = useState<Email | null>(null);
   const [recipientFilter, setRecipientFilter] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [replyToEmailId, setReplyToEmailId] = useState<string | null>(null);
 
   // Collect unique recipient addresses from emails
   const recipients = Array.from(
@@ -43,9 +44,16 @@ export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
     ),
   );
 
+  function refetchEmails() {
+    fetchSenderEmails(sender.id, {
+      recipient: recipientFilter || undefined,
+    }).then(setEmails);
+  }
+
   useEffect(() => {
     setLoading(true);
     setRecipientFilter("");
+    setReplyToEmailId(null);
     fetchSenderEmails(sender.id)
       .then((data) => {
         setEmails(data);
@@ -169,12 +177,24 @@ export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
                 senderEmail={sender.email}
                 onOpenHtml={setHtmlPreviewEmail}
                 onMarkRead={handleMarkRead}
-                onReply={onReply}
+                onReply={setReplyToEmailId}
               />
             ))
           )}
         </div>
       </ScrollArea>
+
+      {/* Reply Composer */}
+      {replyToEmailId && (
+        <ReplyComposer
+          emailId={replyToEmailId}
+          senderName={sender.name}
+          senderEmail={sender.email}
+          recipients={recipients}
+          onClose={() => setReplyToEmailId(null)}
+          onSent={refetchEmails}
+        />
+      )}
 
       {/* HTML Preview Modal */}
       <EmailHtmlModal
