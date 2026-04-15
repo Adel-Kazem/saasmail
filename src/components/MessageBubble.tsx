@@ -9,6 +9,7 @@ interface MessageBubbleProps {
   onMarkRead: (email: Email) => void;
   onReply: (emailId: string) => void;
   onDelete: (emailId: string) => void;
+  compact?: boolean;
 }
 
 const MAX_LINES = 4;
@@ -22,15 +23,18 @@ export default function MessageBubble({
   onMarkRead,
   onReply,
   onDelete,
+  compact = false,
 }: MessageBubbleProps) {
   const [expanded, setExpanded] = useState(false);
   const isSent = email.type === "sent";
   const isUnread = email.type === "received" && email.isRead === 0;
 
   const text = email.bodyText || "";
-  const isTruncated = text.length > TRUNCATE_LENGTH && !expanded;
+  const truncateLength = compact ? 160 : TRUNCATE_LENGTH;
+
+  const isTruncated = text.length > truncateLength && !expanded;
   const displayText = isTruncated
-    ? text.slice(0, TRUNCATE_LENGTH).trimEnd() + "..."
+    ? text.slice(0, truncateLength).trimEnd() + "..."
     : text;
 
   const senderName = isSent
@@ -64,7 +68,7 @@ export default function MessageBubble({
 
   return (
     <div
-      className={`group px-4 sm:px-6 py-2 hover:bg-hover/50 transition-colors ${
+      className={`group ${compact ? "px-3 py-1.5" : "px-4 sm:px-6 py-2"} hover:bg-hover/50 transition-colors ${
         isUnread ? "bg-accent/5" : ""
       }`}
       onClick={handleClick}
@@ -110,7 +114,7 @@ export default function MessageBubble({
       )}
 
       {/* Show more / less */}
-      {text.length > TRUNCATE_LENGTH && (
+      {text.length > truncateLength && (
         <button
           onClick={(e) => {
             e.stopPropagation();
