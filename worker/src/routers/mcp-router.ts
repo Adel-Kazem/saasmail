@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, like, desc } from "drizzle-orm";
+import { eq, like, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { Resend } from "resend";
 import { getOAuthSession } from "../auth";
@@ -244,18 +244,19 @@ async function listSenders(db: Db, args: Record<string, unknown>) {
 
   let rows;
   if (q) {
+    const escaped = q.replace(/[%_\\]/g, "\\$&");
     rows = await db
       .select()
       .from(senders)
-      .where(like(senders.email, `%${q}%`))
-      .orderBy(senders.lastEmailAt)
+      .where(sql`${senders.email} LIKE ${"%" + escaped + "%"} ESCAPE '\\'`)
+      .orderBy(desc(senders.lastEmailAt))
       .limit(limit)
       .offset(offset);
   } else {
     rows = await db
       .select()
       .from(senders)
-      .orderBy(senders.lastEmailAt)
+      .orderBy(desc(senders.lastEmailAt))
       .limit(limit)
       .offset(offset);
   }
@@ -297,7 +298,8 @@ async function listEmails(db: Db, args: Record<string, unknown>) {
     .from(sentEmails)
     .where(eq(sentEmails.senderId, senderId))
     .orderBy(sentEmails.sentAt)
-    .limit(limit);
+    .limit(limit)
+    .offset(offset);
 
   const combined = [
     ...received.map((e) => ({ ...e, type: "received" as const })),
@@ -547,6 +549,12 @@ async function handleRpcMessage(
       case "notifications/initialized":
       case "notifications/cancelled":
         return null;
+
+      case "resources/list":
+        return jsonRpcResult(id, { resources: [] });
+
+      case "prompts/list":
+        return jsonRpcResult(id, { prompts: [] });
 
       case "ping":
         return jsonRpcResult(id, {});
