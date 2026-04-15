@@ -94,8 +94,8 @@ export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-b border-border-dark px-6 py-3">
-        <div className="flex items-center justify-between">
+      <div className="border-b border-border-dark px-4 sm:px-6 py-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-text-primary">
               {sender.name || sender.email}
@@ -138,7 +138,7 @@ export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
       </div>
 
       {/* Sequence status */}
-      <div className="border-b border-border-dark px-6 py-2">
+      <div className="border-b border-border-dark px-4 sm:px-6 py-2">
         {enrollmentInfo?.enrollment ? (
           <SequenceStatus
             senderId={sender.id}
@@ -156,9 +156,9 @@ export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
 
       {/* Conversation */}
       <ScrollArea className="flex-1">
-        <div className="py-4" ref={scrollRef}>
+        <div className="divide-y divide-border-dark" ref={scrollRef}>
           {chronologicalEmails.length === 0 ? (
-            <p className="text-center text-xs text-text-tertiary">
+            <p className="py-4 text-center text-xs text-text-tertiary">
               No emails found.
             </p>
           ) : (

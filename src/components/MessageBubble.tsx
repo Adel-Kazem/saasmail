@@ -31,9 +31,13 @@ export default function MessageBubble({
     ? text.slice(0, TRUNCATE_LENGTH).trimEnd() + "..."
     : text;
 
-  const attribution = isSent
-    ? `You${email.fromAddress ? ` (${email.fromAddress})` : ""}`
+  const senderName = isSent
+    ? "You"
     : senderEmail;
+
+  const toAddress = isSent
+    ? email.toAddress || senderEmail
+    : email.recipient || email.fromAddress || "";
 
   const timestamp = new Date(email.timestamp * 1000);
   const timeStr = timestamp.toLocaleTimeString([], {
@@ -50,7 +54,7 @@ export default function MessageBubble({
     (att) => !att.contentId,
   );
 
-  function handleBubbleClick() {
+  function handleClick() {
     if (isUnread) {
       onMarkRead(email);
     }
@@ -58,101 +62,103 @@ export default function MessageBubble({
 
   return (
     <div
-      className={`flex ${isSent ? "justify-end" : "justify-start"} px-4 py-1.5`}
+      className={`group px-4 sm:px-6 py-2 hover:bg-hover/50 transition-colors ${
+        isUnread ? "bg-accent/5" : ""
+      }`}
+      onClick={handleClick}
     >
-      <div
-        className={`group relative max-w-[75%] rounded-xl px-4 py-2.5 ${
-          isSent
-            ? "bg-accent/20 text-text-primary"
-            : isUnread
-              ? "bg-card border border-accent/30 text-text-primary"
-              : "bg-card text-text-primary"
-        }`}
-        onClick={handleBubbleClick}
-      >
-        {/* Attribution + time */}
-        <div className="mb-1 flex items-center gap-2">
-          <span
-            className={`text-[11px] ${isUnread ? "font-semibold text-accent" : "text-text-tertiary"}`}
-          >
-            {attribution}
-          </span>
-          <span className="text-[10px] text-text-tertiary">
-            {dateStr} {timeStr}
-          </span>
-          {isUnread && <span className="h-1.5 w-1.5 rounded-full bg-accent" />}
+      {/* Sender line with To: label */}
+      <div className="flex items-baseline gap-2 mb-0.5 min-w-0">
+        <span
+          className={`text-xs font-semibold shrink-0 ${
+            isUnread ? "text-accent" : "text-text-primary"
+          }`}
+        >
+          {senderName}
+        </span>
+        <span className="text-[11px] text-text-tertiary truncate min-w-0">
+          To: {toAddress}
+        </span>
+        <span className="text-[10px] text-text-tertiary shrink-0 ml-auto">
+          {dateStr} {timeStr}
+        </span>
+        {isUnread && (
+          <span className="h-1.5 w-1.5 rounded-full bg-accent shrink-0" />
+        )}
+      </div>
+
+      {/* Subject */}
+      {email.subject && (
+        <p
+          className={`text-xs mb-0.5 ${
+            isUnread ? "font-semibold text-text-primary" : "font-medium text-text-secondary"
+          }`}
+        >
+          {email.subject}
+        </p>
+      )}
+
+      {/* Text body */}
+      {displayText ? (
+        <p className="whitespace-pre-wrap text-xs text-text-secondary leading-relaxed">
+          {displayText}
+        </p>
+      ) : (
+        <p className="text-xs text-text-tertiary italic">(no text content)</p>
+      )}
+
+      {/* Show more / less */}
+      {text.length > TRUNCATE_LENGTH && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded(!expanded);
+          }}
+          className="mt-1 text-[11px] text-accent hover:underline"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+
+      {/* Downloadable attachments */}
+      {downloadableAttachments.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {downloadableAttachments.map((att) => (
+            <a
+              key={att.id}
+              href={`/api/attachments/${att.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 rounded border border-border-dark px-2 py-1 text-[10px] text-text-secondary hover:bg-hover"
+            >
+              <Paperclip size={10} />
+              {att.filename}
+            </a>
+          ))}
         </div>
+      )}
 
-        {/* Subject */}
-        {email.subject && (
-          <p
-            className={`mb-1 text-xs ${isUnread ? "font-semibold" : "font-medium"} text-text-primary`}
-          >
-            {email.subject}
-          </p>
-        )}
-
-        {/* Text body */}
-        {displayText ? (
-          <p className="whitespace-pre-wrap text-xs text-text-secondary leading-relaxed">
-            {displayText}
-          </p>
-        ) : (
-          <p className="text-xs text-text-tertiary italic">(no text content)</p>
-        )}
-
-        {/* Show more / less */}
-        {text.length > TRUNCATE_LENGTH && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded(!expanded);
-            }}
-            className="mt-1 text-[11px] text-accent hover:underline"
-          >
-            {expanded ? "Show less" : "Show more"}
-          </button>
-        )}
-
-        {/* Downloadable attachments */}
-        {downloadableAttachments.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {downloadableAttachments.map((att) => (
-              <a
-                key={att.id}
-                href={`/api/attachments/${att.id}`}
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 rounded border border-border-dark px-2 py-1 text-[10px] text-text-secondary hover:bg-hover"
-              >
-                <Paperclip size={10} />
-                {att.filename}
-              </a>
-            ))}
-          </div>
-        )}
-
-        {/* Expand icon (full HTML preview) */}
+      {/* Action buttons */}
+      <div className="flex items-center gap-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {email.bodyHtml && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onOpenHtml(email);
             }}
-            className="absolute right-2 top-2 rounded p-1 text-text-tertiary opacity-0 transition-opacity hover:bg-hover hover:text-text-secondary group-hover:opacity-100"
+            className="flex items-center gap-1 text-[11px] text-text-tertiary hover:text-text-secondary"
             title="View full email"
           >
-            <Maximize2 size={14} />
+            <Maximize2 size={12} />
+            View
           </button>
         )}
-
-        {/* Reply button for received emails */}
         {email.type === "received" && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onReply(email.id);
             }}
-            className="mt-2 text-[11px] text-text-tertiary hover:text-text-secondary"
+            className="text-[11px] text-text-tertiary hover:text-text-secondary"
           >
             Reply
           </button>
