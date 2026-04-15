@@ -2,21 +2,16 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { signIn } from "@/lib/auth-client";
 import { validateInvite, acceptInvite } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 
 export default function InviteAcceptPage() {
   const { token } = useParams<{ token: string }>();
-  const [status, setStatus] = useState<"loading" | "valid" | "invalid">(
-    "loading",
-  );
+  const [status, setStatus] = useState<"loading" | "valid" | "invalid">("loading");
   const [inviteEmail, setInviteEmail] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -78,23 +73,22 @@ export default function InviteAcceptPage() {
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-neutral-500">Validating invitation...</p>
+      <div className="flex min-h-screen items-center justify-center bg-main">
+        <p className="text-text-secondary">Validating invitation...</p>
       </div>
     );
   }
 
   if (status === "invalid") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-50">
-        <Card className="w-full max-w-sm">
+      <div className="flex min-h-screen items-center justify-center bg-main">
+        <Card className="w-full max-w-sm border-border-dark bg-card">
           <CardHeader>
-            <CardTitle className="text-2xl">Invalid Invitation</CardTitle>
+            <CardTitle className="text-xl text-text-primary">Invalid Invitation</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-neutral-600">
-              This invitation link is invalid, expired, or has already been
-              used.
+            <p className="text-xs text-text-secondary">
+              This invitation link is invalid, expired, or has already been used.
             </p>
           </CardContent>
         </Card>
@@ -102,57 +96,37 @@ export default function InviteAcceptPage() {
     );
   }
 
+  const inputClass =
+    "h-8 w-full rounded-md border border-border-dark bg-input-bg px-3 text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-main">
+      <Card className="w-full max-w-sm border-border-dark bg-card">
         <CardHeader>
-          <CardTitle className="text-2xl">Join cmail</CardTitle>
-          <p className="text-sm text-neutral-500">
+          <CardTitle className="text-xl text-text-primary">Join cmail</CardTitle>
+          <p className="text-xs text-text-secondary">
             Create your account to get started.
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoComplete="name"
-              />
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-text-secondary">Name</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" className={inputClass} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                disabled={!!inviteEmail}
-              />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-text-secondary">Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" disabled={!!inviteEmail} className={inputClass + (inviteEmail ? " opacity-50" : "")} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="new-password"
-              />
-              <p className="text-xs text-neutral-500">At least 8 characters.</p>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-text-secondary">Password</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" className={inputClass} />
+              <p className="text-[10px] text-text-tertiary">At least 8 characters.</p>
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+            {error && <p className="text-xs text-destructive">{error}</p>}
+            <button type="submit" className="w-full rounded-md bg-accent py-2 text-xs font-medium text-white hover:bg-accent-hover disabled:opacity-50" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}
-            </Button>
+            </button>
           </form>
         </CardContent>
       </Card>

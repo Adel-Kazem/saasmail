@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -32,8 +31,8 @@ export default function LoginPage() {
 
   if (setupRequired === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-neutral-500">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-main">
+        <p className="text-text-secondary">Loading...</p>
       </div>
     );
   }
@@ -60,23 +59,23 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-main">
+      <Card className="w-full max-w-sm border-border-dark bg-card">
         <CardHeader>
-          <CardTitle className="text-2xl">cmail</CardTitle>
-          <p className="text-sm text-neutral-500">
+          <CardTitle className="text-xl text-text-primary">cmail</CardTitle>
+          <p className="text-xs text-text-secondary">
             Sign in with your passkey to continue.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <Button
-            className="w-full"
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <button
+            className="w-full rounded-md bg-accent py-2 text-xs font-medium text-white hover:bg-accent-hover disabled:opacity-50"
             onClick={handlePasskeyLogin}
             disabled={loading}
           >
             {loading ? "Signing in..." : "Sign in with Passkey"}
-          </Button>
+          </button>
         </CardContent>
       </Card>
     </div>

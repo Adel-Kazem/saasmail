@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -30,24 +29,23 @@ export default function SetupPasskeyPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-main">
+      <Card className="w-full max-w-sm border-border-dark bg-card">
         <CardHeader>
-          <CardTitle className="text-2xl">Register a Passkey</CardTitle>
-          <p className="text-sm text-neutral-500">
+          <CardTitle className="text-xl text-text-primary">Register a Passkey</CardTitle>
+          <p className="text-xs text-text-secondary">
             For security, you must register a passkey before accessing cmail.
-            This will be used for all future sign-ins.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <Button
-            className="w-full"
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <button
+            className="w-full rounded-md bg-accent py-2 text-xs font-medium text-white hover:bg-accent-hover disabled:opacity-50"
             onClick={handleRegister}
             disabled={loading}
           >
             {loading ? "Registering..." : "Register Passkey"}
-          </Button>
+          </button>
         </CardContent>
       </Card>
     </div>
