@@ -4,6 +4,9 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { injectDb } from "./db/middleware";
 import { createAuth } from "./auth";
+import { apiKeys } from "./db/api-keys.schema";
+import { users } from "./db/auth.schema";
+import { eq } from "drizzle-orm";
 import { handleEmail } from "./email-handler";
 import { sendersRouter } from "./routers/senders-router";
 import { emailsRouter } from "./routers/emails-router";
@@ -51,15 +54,51 @@ app.use("/api/*", async (c, next) => {
   ) {
     return next();
   }
+
+  // Try session cookie first
   const auth = createAuth(c.env);
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });
-  if (!session) {
-    return c.json({ error: "Unauthorized" }, 401);
+  if (session) {
+    c.set("user", session.user);
+    return next();
   }
-  c.set("user", session.user);
-  return next();
+
+  // Try Bearer token (API key)
+  const authHeader = c.req.header("Authorization");
+  if (authHeader?.startsWith("Bearer sk_")) {
+    const token = authHeader.slice(7); // Remove "Bearer "
+    const encoder = new TextEncoder();
+    const data = encoder.encode(token);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const tokenHash = hashArray
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    const db = c.get("db");
+    const rows = await db
+      .select({ userId: apiKeys.userId })
+      .from(apiKeys)
+      .where(eq(apiKeys.keyHash, tokenHash))
+      .limit(1);
+
+    if (rows.length > 0) {
+      const userRows = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, rows[0].userId))
+        .limit(1);
+
+      if (userRows.length > 0) {
+        c.set("user", userRows[0]);
+        return next();
+      }
+    }
+  }
+
+  return c.json({ error: "Unauthorized" }, 401);
 });
 
 // Admin guard middleware
