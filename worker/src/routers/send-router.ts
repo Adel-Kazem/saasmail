@@ -7,6 +7,8 @@ import { senders } from "../db/senders.schema";
 import { emails } from "../db/emails.schema";
 import { json201Response } from "../lib/helpers";
 import { cancelSequencesForSender } from "../lib/cancel-sequence";
+import { emailTemplates } from "../db/email-templates.schema";
+import { interpolate, extractVariables } from "../lib/interpolate";
 import type { Variables } from "../variables";
 
 export const sendRouter = new OpenAPIHono<{
@@ -115,8 +117,11 @@ const replyEmailRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            bodyHtml: z.string(),
+            bodyHtml: z.string().optional(),
             bodyText: z.string().optional(),
+            fromAddress: z.string().email().optional(),
+            templateSlug: z.string().optional(),
+            variables: z.record(z.string(), z.string()).optional(),
           }),
         },
       },
@@ -130,9 +135,8 @@ const replyEmailRoute = createRoute({
 sendRouter.openapi(replyEmailRoute, async (c) => {
   const db = c.get("db");
   const { emailId } = c.req.valid("param");
-  const { bodyHtml, bodyText } = c.req.valid("json");
+  const { bodyHtml, bodyText, fromAddress: requestedFrom, templateSlug, variables } = c.req.valid("json");
   const now = Math.floor(Date.now() / 1000);
-  const fromAddress = c.env.RESEND_EMAIL_FROM;
 
   // Get the original email
   const original = await db
@@ -159,17 +163,68 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
   }
 
   const toAddress = sender[0].email;
-  const subject = orig.subject?.startsWith("Re: ")
-    ? orig.subject
-    : `Re: ${orig.subject || ""}`;
+
+  // Determine from address
+  let finalFrom = c.env.RESEND_EMAIL_FROM;
+  if (requestedFrom) {
+    finalFrom = requestedFrom;
+  }
+
+  // Determine subject and body
+  let finalSubject: string;
+  let finalBodyHtml: string;
+
+  if (templateSlug) {
+    // Template-based reply
+    const templateRows = await db
+      .select()
+      .from(emailTemplates)
+      .where(eq(emailTemplates.slug, templateSlug))
+      .limit(1);
+
+    if (templateRows.length === 0) {
+      return c.json({ error: "Template not found" }, 404);
+    }
+
+    const template = templateRows[0];
+    const vars = variables ?? {};
+
+    // Validate required variables
+    const subjectVars = extractVariables(template.subject);
+    const bodyVars = extractVariables(template.bodyHtml);
+    const requiredVars = Array.from(new Set([...subjectVars, ...bodyVars]));
+    const missingVars = requiredVars.filter((v) => !(v in vars));
+
+    if (missingVars.length > 0) {
+      return c.json(
+        {
+          error: "Missing required template variables",
+          missingVariables: missingVars,
+          requiredVariables: requiredVars,
+        },
+        400,
+      );
+    }
+
+    finalSubject = interpolate(template.subject, vars);
+    finalBodyHtml = interpolate(template.bodyHtml, vars);
+  } else if (bodyHtml) {
+    // Freeform reply
+    finalSubject = orig.subject?.startsWith("Re: ")
+      ? orig.subject
+      : `Re: ${orig.subject || ""}`;
+    finalBodyHtml = bodyHtml;
+  } else {
+    return c.json({ error: "Either bodyHtml or templateSlug is required" }, 400);
+  }
 
   // Send via Resend
   const resend = new Resend(c.env.RESEND_API_KEY);
   const result = await resend.emails.send({
-    from: fromAddress,
+    from: finalFrom,
     to: toAddress,
-    subject,
-    html: bodyHtml,
+    subject: finalSubject,
+    html: finalBodyHtml,
     text: bodyText,
     headers: orig.messageId ? { "In-Reply-To": orig.messageId } : undefined,
   });
@@ -179,10 +234,10 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
   await db.insert(sentEmails).values({
     id,
     senderId: orig.senderId,
-    fromAddress,
+    fromAddress: finalFrom,
     toAddress,
-    subject,
-    bodyHtml,
+    subject: finalSubject,
+    bodyHtml: finalBodyHtml,
     bodyText: bodyText ?? null,
     inReplyTo: orig.messageId,
     resendId: result.data?.id ?? null,
