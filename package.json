@@ -12,7 +12,9 @@
     "db:migrate:dev": "wrangler d1 migrations apply cmail-db --local",
     "db:migrate:prod": "wrangler d1 migrations apply cmail-db --remote",
     "db:studio:dev": "drizzle-kit studio",
-    "db:studio:prod": "NODE_ENV=production drizzle-kit studio"
+    "db:studio:prod": "NODE_ENV=production drizzle-kit studio",
+    "test": "vitest run --config vitest.config.test.ts",
+    "test:watch": "vitest --config vitest.config.test.ts"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "7.3.0",
@@ -51,17 +53,21 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.0.0",
+    "@cloudflare/vitest-pool-workers": "^0.14.7",
     "@cloudflare/workers-types": "^4.20250410.0",
     "@tailwindcss/vite": "^4.1.0",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.6",
     "@vitejs/plugin-react-swc": "^3.9.0",
+    "@vitest/runner": "^4.1.4",
+    "@vitest/snapshot": "^4.1.4",
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.1",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.8.3",
     "vite": "^7.0.0",
+    "vitest": "^4.1.4",
     "wrangler": "^4.14.0"
   }
 }
