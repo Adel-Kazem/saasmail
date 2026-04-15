@@ -46,7 +46,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const result = await signIn.emailAndPassword({ email, password });
+      const result = await signIn.email({ email, password });
       if (result.error) {
         setError(result.error.message || "Sign in failed");
       } else {
