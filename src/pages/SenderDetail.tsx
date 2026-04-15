@@ -1,6 +1,11 @@
-import { useState, useEffect } from "react";
-import DOMPurify from "dompurify";
+import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   fetchSenderEmails,
   markEmailRead,
@@ -11,6 +16,8 @@ import {
 } from "@/lib/api";
 import EnrollSequenceModal from "@/components/EnrollSequenceModal";
 import SequenceStatus from "@/components/SequenceStatus";
+import MessageBubble from "@/components/MessageBubble";
+import EmailHtmlModal from "@/components/EmailHtmlModal";
 
 interface SenderDetailProps {
   sender: Sender;
@@ -19,16 +26,31 @@ interface SenderDetailProps {
 
 export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
   const [emails, setEmails] = useState<Email[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [enrollModalOpen, setEnrollModalOpen] = useState(false);
   const [enrollmentInfo, setEnrollmentInfo] = useState<SenderEnrollmentInfo | null>(null);
+  const [htmlPreviewEmail, setHtmlPreviewEmail] = useState<Email | null>(null);
+  const [recipientFilter, setRecipientFilter] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Collect unique recipient addresses from emails
+  const recipients = Array.from(
+    new Set(
+      emails
+        .map((e) =>
+          e.type === "received" ? e.recipient : e.toAddress
+        )
+        .filter(Boolean) as string[]
+    )
+  );
 
   useEffect(() => {
     setLoading(true);
-    setExpandedId(null);
+    setRecipientFilter("");
     fetchSenderEmails(sender.id)
-      .then(setEmails)
+      .then((data) => {
+        setEmails(data);
+      })
       .finally(() => setLoading(false));
   }, [sender.id]);
 
@@ -36,38 +58,27 @@ export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
     fetchSenderEnrollment(sender.id).then(setEnrollmentInfo);
   }, [sender.id]);
 
+  // Refetch when recipient filter changes
+  useEffect(() => {
+    if (!sender.id) return;
+    setLoading(true);
+    fetchSenderEmails(sender.id, {
+      recipient: recipientFilter || undefined,
+    })
+      .then(setEmails)
+      .finally(() => setLoading(false));
+  }, [recipientFilter, sender.id]);
+
   function refreshEnrollment() {
     fetchSenderEnrollment(sender.id).then(setEnrollmentInfo);
   }
 
-  async function handleExpand(email: Email) {
-    if (expandedId === email.id) {
-      setExpandedId(null);
-      return;
-    }
-    setExpandedId(email.id);
-    if (email.type === "received" && email.isRead === 0) {
-      await markEmailRead(email.id, true);
-      setEmails((prev) =>
-        prev.map((e) => (e.id === email.id ? { ...e, isRead: 1 } : e))
-      );
-    }
-  }
-
-  async function handleToggleRead(e: React.MouseEvent, email: Email) {
-    e.stopPropagation();
-    if (email.type !== "received") return;
-    const newIsRead = email.isRead === 0;
-    await markEmailRead(email.id, newIsRead);
+  async function handleMarkRead(email: Email) {
+    if (email.type !== "received" || email.isRead !== 0) return;
+    await markEmailRead(email.id, true);
     setEmails((prev) =>
-      prev.map((em) =>
-        em.id === email.id ? { ...em, isRead: newIsRead ? 1 : 0 } : em
-      )
+      prev.map((e) => (e.id === email.id ? { ...e, isRead: 1 } : e))
     );
-  }
-
-  function formatDate(ts: number) {
-    return new Date(ts * 1000).toLocaleString();
   }
 
   if (loading) {
@@ -78,21 +89,56 @@ export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
     );
   }
 
+  // Reverse emails for chronological (oldest first) display
+  const chronologicalEmails = [...emails].reverse();
+
   return (
     <div className="flex h-full flex-col">
+      {/* Header */}
       <div className="border-b border-border-dark px-6 py-3">
-        <h2 className="text-sm font-semibold text-text-primary">
-          {sender.name || sender.email}
-        </h2>
-        {sender.name && (
-          <p className="text-xs text-text-secondary">{sender.email}</p>
-        )}
-        <p className="text-[11px] text-text-tertiary">
-          {sender.totalCount} email{sender.totalCount !== 1 ? "s" : ""}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-text-primary">
+              {sender.name || sender.email}
+            </h2>
+            {sender.name && (
+              <p className="text-xs text-text-secondary">{sender.email}</p>
+            )}
+            <p className="text-[11px] text-text-tertiary">
+              {sender.totalCount} email{sender.totalCount !== 1 ? "s" : ""}
+            </p>
+          </div>
+          {/* Recipient filter */}
+          {recipients.length > 1 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="rounded-md border border-border-dark px-3 py-1.5 text-xs text-text-secondary hover:bg-hover">
+                  {recipientFilter || "All addresses"}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-card border-border-dark text-text-primary">
+                <DropdownMenuItem
+                  onClick={() => setRecipientFilter("")}
+                  className="text-xs text-text-secondary focus:bg-hover focus:text-text-primary"
+                >
+                  All addresses
+                </DropdownMenuItem>
+                {recipients.map((r) => (
+                  <DropdownMenuItem
+                    key={r}
+                    onClick={() => setRecipientFilter(r)}
+                    className="text-xs text-text-secondary focus:bg-hover focus:text-text-primary"
+                  >
+                    {r}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
-      {/* Sequence status or enroll button */}
+      {/* Sequence status */}
       <div className="border-b border-border-dark px-6 py-2">
         {enrollmentInfo?.enrollment ? (
           <SequenceStatus
@@ -109,109 +155,36 @@ export default function SenderDetail({ sender, onReply }: SenderDetailProps) {
         )}
       </div>
 
+      {/* Conversation */}
       <ScrollArea className="flex-1">
-        {emails.map((email) => (
-          <div key={email.id}>
-            <button
-              onClick={() => handleExpand(email)}
-              className={`w-full px-6 py-2.5 text-left transition-colors hover:bg-hover ${
-                expandedId === email.id ? "bg-hover" : ""
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                {email.type === "sent" && (
-                  <span className="rounded border border-border-dark px-1.5 py-0.5 text-[10px] text-text-tertiary">
-                    Sent
-                  </span>
-                )}
-                <span
-                  className={`flex-1 truncate text-xs ${
-                    email.type === "received" && email.isRead === 0
-                      ? "font-semibold text-text-primary"
-                      : "text-text-secondary"
-                  }`}
-                >
-                  {email.subject || "(no subject)"}
-                </span>
-                {email.type === "received" && (email.attachmentCount ?? 0) > 0 && (
-                  <span className="text-[11px] text-text-tertiary">
-                    {email.attachmentCount} file{email.attachmentCount !== 1 ? "s" : ""}
-                  </span>
-                )}
-                <span className="shrink-0 text-[11px] text-text-tertiary">
-                  {formatDate(email.timestamp)}
-                </span>
-              </div>
-            </button>
-
-            {expandedId === email.id && (
-              <div className="border-t border-border-dark bg-card px-6 py-4">
-                <div className="mb-3 flex items-center gap-2">
-                  {email.type === "received" && (
-                    <>
-                      <button
-                        onClick={() => onReply(email.id)}
-                        className="rounded-md border border-border-dark px-3 py-1 text-xs text-text-secondary transition-colors hover:bg-hover hover:text-text-primary"
-                      >
-                        Reply
-                      </button>
-                      <button
-                        onClick={(e) => handleToggleRead(e, email)}
-                        className="rounded-md px-3 py-1 text-xs text-text-tertiary transition-colors hover:bg-hover hover:text-text-secondary"
-                      >
-                        Mark {email.isRead ? "unread" : "read"}
-                      </button>
-                    </>
-                  )}
-                  {email.type === "sent" && email.toAddress && (
-                    <span className="text-[11px] text-text-tertiary">
-                      To: {email.toAddress}
-                    </span>
-                  )}
-                  {email.type === "received" && email.recipient && (
-                    <span className="text-[11px] text-text-tertiary">
-                      To: {email.recipient}
-                    </span>
-                  )}
-                </div>
-                {email.bodyHtml ? (
-                  <div
-                    className="prose prose-sm prose-invert max-w-none text-text-secondary"
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(email.bodyHtml),
-                    }}
-                  />
-                ) : (
-                  <pre className="whitespace-pre-wrap text-xs text-text-secondary">
-                    {email.bodyText || "(empty)"}
-                  </pre>
-                )}
-                {email.type === "received" &&
-                  email.attachments &&
-                  email.attachments.length > 0 && (
-                    <div className="mt-4 border-t border-border-dark pt-3">
-                      <p className="mb-2 text-[11px] font-medium text-text-tertiary">
-                        Attachments
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {email.attachments.map((att) => (
-                          <a
-                            key={att.id}
-                            href={`/api/attachments/${att.id}`}
-                            className="rounded border border-border-dark px-3 py-1.5 text-[11px] text-text-secondary hover:bg-hover"
-                          >
-                            {att.filename} ({Math.round(att.size / 1024)}KB)
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-              </div>
-            )}
-            <div className="h-px bg-border-dark" />
-          </div>
-        ))}
+        <div className="py-4" ref={scrollRef}>
+          {chronologicalEmails.length === 0 ? (
+            <p className="text-center text-xs text-text-tertiary">
+              No emails found.
+            </p>
+          ) : (
+            chronologicalEmails.map((email) => (
+              <MessageBubble
+                key={email.id}
+                email={email}
+                senderEmail={sender.email}
+                onOpenHtml={setHtmlPreviewEmail}
+                onMarkRead={handleMarkRead}
+                onReply={onReply}
+              />
+            ))
+          )}
+        </div>
       </ScrollArea>
+
+      {/* HTML Preview Modal */}
+      <EmailHtmlModal
+        email={htmlPreviewEmail}
+        open={htmlPreviewEmail !== null}
+        onClose={() => setHtmlPreviewEmail(null)}
+      />
+
+      {/* Sequence Enrollment Modal */}
       <EnrollSequenceModal
         senderId={sender.id}
         senderName={sender.name}
