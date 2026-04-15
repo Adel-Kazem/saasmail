@@ -4,6 +4,9 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { injectDb } from "./db/middleware";
 import { createAuth } from "./auth";
+import {
+  oauthProviderAuthServerMetadata,
+} from "@better-auth/oauth-provider";
 import type { Context } from "hono";
 import { apiKeys } from "./db/api-keys.schema";
 import { users } from "./db/auth.schema";
@@ -154,11 +157,11 @@ app.route("/mcp", mcpRouter);
 // (Claude.ai, Claude Code, GitHub Copilot) can discover the authorization
 // server and protected-resource endpoints.
 //
-// /.well-known/oauth-authorization-server: forwarded through auth.handler to
-// the oauthProvider's /.well-known/openid-configuration endpoint. We must go
-// through auth.handler (not call auth.api directly) so that the dynamic
-// baseURL config is resolved from the real request host — otherwise the issuer
-// and endpoint URLs would be wrong.
+// /.well-known/oauth-authorization-server: uses oauthProviderAuthServerMetadata
+// which calls auth.api.getOAuthServerConfig internally (the endpoint is
+// SERVER_ONLY so cannot be reached through auth.handler). We create the auth
+// instance with the request's host so the issuer and endpoint URLs match the
+// actual domain the client connected to.
 //
 // /.well-known/oauth-protected-resource: oauthProvider does not expose this
 // RFC 9728 endpoint, so we build the response ourselves. The resource and
@@ -170,12 +173,7 @@ async function forwardToOAuthDiscovery(c: Context<{
 }>): Promise<Response> {
   const url = new URL(c.req.raw.url);
   const auth = createAuth(c.env, undefined, url.host);
-  const forwardedUrl = new URL(
-    "/api/auth/.well-known/openid-configuration",
-    url.origin,
-  );
-  const forwardedRequest = new Request(forwardedUrl, c.req.raw);
-  return auth.handler(forwardedRequest);
+  return oauthProviderAuthServerMetadata(auth)(c.req.raw);
 }
 
 async function serveOAuthProtectedResource(c: Context<{
