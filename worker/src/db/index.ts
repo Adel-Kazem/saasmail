@@ -7,4 +7,7 @@ export * from "./attachments.schema";
 export * from "./email-templates.schema";
 export * from "./invitations.schema";
 export * from "./api-keys.schema";
+export * from "./sequences.schema";
+export * from "./sequence-enrollments.schema";
+export * from "./sequence-emails.schema";
 export * from "./schema";

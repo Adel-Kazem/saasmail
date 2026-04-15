@@ -6,6 +6,9 @@ import { sentEmails } from "./sent-emails.schema";
 import { attachments } from "./attachments.schema";
 import { emailTemplates } from "./email-templates.schema";
 import { apiKeys } from "./api-keys.schema";
+import { sequences } from "./sequences.schema";
+import { sequenceEnrollments } from "./sequence-enrollments.schema";
+import { sequenceEmails } from "./sequence-emails.schema";
 
 export const schema = {
   ...authSchema,
@@ -16,4 +19,7 @@ export const schema = {
   attachments,
   emailTemplates,
   apiKeys,
+  sequences,
+  sequenceEnrollments,
+  sequenceEmails,
 } as const;
