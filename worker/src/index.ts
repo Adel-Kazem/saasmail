@@ -159,6 +159,13 @@ app.route("/mcp", mcpRouter);
 // /.well-known/oauth-authorization-server: forwarded through the
 // oauthProviderAuthServerMetadata helper so the dynamic baseURL config is
 // resolved from the real request — otherwise endpoint URLs would be wrong.
+// RFC 8414: when the issuer includes a path (e.g. /api/auth), clients may
+// request /.well-known/oauth-authorization-server/api/auth. Serve the same
+// metadata for both the root and issuer-path variants.
+app.get("/.well-known/oauth-authorization-server/*", async (c) => {
+  const auth = createAuth(c.env);
+  return oauthProviderAuthServerMetadata(auth)(c.req.raw);
+});
 app.get("/.well-known/oauth-authorization-server", async (c) => {
   const auth = createAuth(c.env);
   return oauthProviderAuthServerMetadata(auth)(c.req.raw);
