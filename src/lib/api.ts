@@ -51,12 +51,19 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+export interface PaginatedSenders {
+  data: Sender[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export async function fetchSenders(params?: {
   q?: string;
   recipient?: string;
   page?: number;
   limit?: number;
-}): Promise<Sender[]> {
+}): Promise<PaginatedSenders> {
   const qs = new URLSearchParams();
   if (params?.q) qs.set("q", params.q);
   if (params?.recipient) qs.set("recipient", params.recipient);

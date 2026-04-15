@@ -6,7 +6,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { fetchSenders, fetchStats, type Sender } from "@/lib/api";
+
+const PAGE_SIZE = 50;
 
 interface SenderListProps {
   selectedSenderId: string | null;
@@ -22,10 +25,19 @@ export default function SenderList({
   const [recipient, setRecipient] = useState<string>("");
   const [recipients, setRecipients] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   useEffect(() => {
     fetchStats().then((stats) => setRecipients(stats.recipients));
   }, []);
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, recipient]);
 
   useEffect(() => {
     setLoading(true);
@@ -33,12 +45,17 @@ export default function SenderList({
       fetchSenders({
         q: search || undefined,
         recipient: recipient || undefined,
+        page,
+        limit: PAGE_SIZE,
       })
-        .then(setSenders)
+        .then((result) => {
+          setSenders(result.data);
+          setTotal(result.total);
+        })
         .finally(() => setLoading(false));
     }, 200);
     return () => clearTimeout(timeout);
-  }, [search, recipient]);
+  }, [search, recipient, page]);
 
   function formatTime(ts: number) {
     const date = new Date(ts * 1000);
@@ -140,6 +157,29 @@ export default function SenderList({
           ))
         )}
       </ScrollArea>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-border-dark px-3 py-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="rounded p-1 text-text-secondary hover:bg-hover disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span className="text-[11px] text-text-tertiary">
+            {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="rounded p-1 text-text-secondary hover:bg-hover disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

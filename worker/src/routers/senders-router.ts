@@ -40,7 +40,15 @@ const listSendersRoute = createRoute({
     }),
   },
   responses: {
-    ...json200Response(z.array(SenderSchema), "List of senders"),
+    ...json200Response(
+      z.object({
+        data: z.array(SenderSchema),
+        total: z.number(),
+        page: z.number(),
+        limit: z.number(),
+      }),
+      "Paginated list of senders",
+    ),
   },
 });
 
@@ -72,6 +80,13 @@ sendersRouter.openapi(listSendersRoute, async (c) => {
       ? sql`${sql.join(conditions, sql` AND `)}`
       : undefined;
 
+  // Get total count
+  const countResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(senders)
+    .where(where);
+  const total = countResult[0]?.count ?? 0;
+
   const rows = await db
     .select({
       id: senders.id,
@@ -87,7 +102,7 @@ sendersRouter.openapi(listSendersRoute, async (c) => {
     .limit(limit)
     .offset(offset);
 
-  const result = await Promise.all(
+  const data = await Promise.all(
     rows.map(async (sender) => {
       const latest = await db
         .select({ subject: emails.subject })
@@ -102,7 +117,7 @@ sendersRouter.openapi(listSendersRoute, async (c) => {
     }),
   );
 
-  return c.json(result, 200);
+  return c.json({ data, total, page, limit }, 200);
 });
 
 const getSenderRoute = createRoute({
