@@ -37,6 +37,7 @@ const CreateSequenceSchema = z.object({
 
 const EnrollSchema = z.object({
   senderId: z.string(),
+  fromAddress: z.string().email(),
   variables: z.record(z.string(), z.string()).optional().default({}),
   skipSteps: z.array(z.number().int()).optional().default([]),
   delayOverrides: z
@@ -319,7 +320,7 @@ const enrollRoute = createRoute({
 sequencesRouter.openapi(enrollRoute, async (c) => {
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const { senderId, variables, skipSteps, delayOverrides } =
+  const { senderId, fromAddress, variables, skipSteps, delayOverrides } =
     c.req.valid("json");
   const now = Math.floor(Date.now() / 1000);
 
@@ -383,6 +384,7 @@ sequencesRouter.openapi(enrollRoute, async (c) => {
     id: enrollmentId,
     sequenceId: id,
     senderId,
+    fromAddress,
     status: "active",
     variables: JSON.stringify(variables),
     enrolledAt: now,

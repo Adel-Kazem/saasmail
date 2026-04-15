@@ -5,6 +5,7 @@ interface EnrollSequenceModalProps {
   senderId: string;
   senderName: string | null;
   senderEmail: string;
+  recipients: string[];
   open: boolean;
   onClose: () => void;
   onEnrolled: () => void;
@@ -14,12 +15,14 @@ export default function EnrollSequenceModal({
   senderId,
   senderName,
   senderEmail,
+  recipients,
   open,
   onClose,
   onEnrolled,
 }: EnrollSequenceModalProps) {
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [selectedId, setSelectedId] = useState("");
+  const [fromAddress, setFromAddress] = useState(recipients[0] ?? "");
   const [skipSteps, setSkipSteps] = useState<number[]>([]);
   const [delayOverrides, setDelayOverrides] = useState<Record<string, number>>(
     {},
@@ -81,6 +84,7 @@ export default function EnrollSequenceModal({
     try {
       await enrollSender(selectedId, {
         senderId,
+        fromAddress,
         variables: varsObj,
         skipSteps,
         delayOverrides,
@@ -128,6 +132,23 @@ export default function EnrollSequenceModal({
                 </option>
               ))}
             </select>
+
+            <div className="mb-4">
+              <p className="mb-2 text-xs font-medium text-text-secondary">
+                Send From
+              </p>
+              <select
+                value={fromAddress}
+                onChange={(e) => setFromAddress(e.target.value)}
+                className="w-full rounded-md border border-border-dark bg-main px-3 py-2 text-sm text-text-primary"
+              >
+                {recipients.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {selectedSequence && (
               <div className="mb-4">

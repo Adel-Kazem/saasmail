@@ -158,8 +158,12 @@ const TOOLS = [
           type: "string",
           description: "Optional plain-text version of the email body.",
         },
+        from_address: {
+          type: "string",
+          description: "The sender email address to send from.",
+        },
       },
-      required: ["to", "subject", "body_html"],
+      required: ["to", "subject", "body_html", "from_address"],
     },
   },
   {
@@ -182,8 +186,12 @@ const TOOLS = [
           type: "string",
           description: "Optional plain-text version of the reply body.",
         },
+        from_address: {
+          type: "string",
+          description: "The sender email address to send from.",
+        },
       },
-      required: ["email_id", "body_html"],
+      required: ["email_id", "body_html", "from_address"],
     },
   },
   {
@@ -336,13 +344,13 @@ async function sendEmail(
   const subject = args.subject as string;
   const bodyHtml = args.body_html as string;
   const bodyText = args.body_text as string | undefined;
+  const fromAddress = args.from_address as string;
 
-  if (!to || !subject || !bodyHtml) {
-    throw new McpToolError("to, subject, and body_html are required");
+  if (!to || !subject || !bodyHtml || !fromAddress) {
+    throw new McpToolError("to, subject, body_html, and from_address are required");
   }
 
   const now = Math.floor(Date.now() / 1000);
-  const fromAddress = env.RESEND_EMAIL_FROM;
 
   const resend = new Resend(env.RESEND_API_KEY);
   const result = await resend.emails.send({
@@ -391,13 +399,13 @@ async function replyEmail(
   const emailId = args.email_id as string;
   const bodyHtml = args.body_html as string;
   const bodyText = args.body_text as string | undefined;
+  const fromAddress = args.from_address as string;
 
-  if (!emailId || !bodyHtml) {
-    throw new McpToolError("email_id and body_html are required");
+  if (!emailId || !bodyHtml || !fromAddress) {
+    throw new McpToolError("email_id, body_html, and from_address are required");
   }
 
   const now = Math.floor(Date.now() / 1000);
-  const fromAddress = env.RESEND_EMAIL_FROM;
 
   const original = await db
     .select()

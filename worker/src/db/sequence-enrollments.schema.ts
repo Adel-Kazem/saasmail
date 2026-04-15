@@ -8,6 +8,7 @@ export const sequenceEnrollments = sqliteTable(
     senderId: text("sender_id").notNull(),
     status: text("status").notNull().default("active"), // active, completed, cancelled
     variables: text("variables").notNull().default("{}"), // JSON
+    fromAddress: text("from_address").notNull(),
     enrolledAt: integer("enrolled_at").notNull(),
     cancelledAt: integer("cancelled_at"),
   },

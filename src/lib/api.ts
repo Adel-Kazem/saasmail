@@ -104,6 +104,7 @@ export async function deleteEmail(
 
 export async function sendEmail(data: {
   to: string;
+  fromAddress: string;
   subject: string;
   bodyHtml: string;
   bodyText?: string;
@@ -120,7 +121,7 @@ export async function replyToEmail(
   data: {
     bodyHtml?: string;
     bodyText?: string;
-    fromAddress?: string;
+    fromAddress: string;
     templateSlug?: string;
     variables?: Record<string, string>;
   },
@@ -393,6 +394,7 @@ export async function enrollSender(
   sequenceId: string,
   data: {
     senderId: string;
+    fromAddress: string;
     variables?: Record<string, string>;
     skipSteps?: number[];
     delayOverrides?: Record<string, number>;

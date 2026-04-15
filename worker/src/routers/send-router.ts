@@ -18,6 +18,7 @@ export const sendRouter = new OpenAPIHono<{
 
 const SendEmailSchema = z.object({
   to: z.string().email(),
+  fromAddress: z.string().email(),
   subject: z.string(),
   bodyHtml: z.string(),
   bodyText: z.string().optional(),
@@ -51,9 +52,8 @@ const sendEmailRoute = createRoute({
 
 sendRouter.openapi(sendEmailRoute, async (c) => {
   const db = c.get("db");
-  const { to, subject, bodyHtml, bodyText } = c.req.valid("json");
+  const { to, fromAddress, subject, bodyHtml, bodyText } = c.req.valid("json");
   const now = Math.floor(Date.now() / 1000);
-  const fromAddress = c.env.RESEND_EMAIL_FROM;
 
   // Send via Resend
   const resend = new Resend(c.env.RESEND_API_KEY);
@@ -119,7 +119,7 @@ const replyEmailRoute = createRoute({
           schema: z.object({
             bodyHtml: z.string().optional(),
             bodyText: z.string().optional(),
-            fromAddress: z.string().email().optional(),
+            fromAddress: z.string().email(),
             templateSlug: z.string().optional(),
             variables: z.record(z.string(), z.string()).optional(),
           }),
@@ -135,7 +135,7 @@ const replyEmailRoute = createRoute({
 sendRouter.openapi(replyEmailRoute, async (c) => {
   const db = c.get("db");
   const { emailId } = c.req.valid("param");
-  const { bodyHtml, bodyText, fromAddress: requestedFrom, templateSlug, variables } = c.req.valid("json");
+  const { bodyHtml, bodyText, fromAddress, templateSlug, variables } = c.req.valid("json");
   const now = Math.floor(Date.now() / 1000);
 
   // Get the original email
@@ -163,12 +163,6 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
   }
 
   const toAddress = sender[0].email;
-
-  // Determine from address
-  let finalFrom = c.env.RESEND_EMAIL_FROM;
-  if (requestedFrom) {
-    finalFrom = requestedFrom;
-  }
 
   // Determine subject and body
   let finalSubject: string;
@@ -221,7 +215,7 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
   // Send via Resend
   const resend = new Resend(c.env.RESEND_API_KEY);
   const result = await resend.emails.send({
-    from: finalFrom,
+    from: fromAddress,
     to: toAddress,
     subject: finalSubject,
     html: finalBodyHtml,
@@ -234,7 +228,7 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
   await db.insert(sentEmails).values({
     id,
     senderId: orig.senderId,
-    fromAddress: finalFrom,
+    fromAddress: fromAddress,
     toAddress,
     subject: finalSubject,
     bodyHtml: finalBodyHtml,

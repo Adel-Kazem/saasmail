@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import TiptapEditor from "@/components/TiptapEditor";
-import { sendEmail } from "@/lib/api";
+import { sendEmail, fetchStats } from "@/lib/api";
 
 interface ComposeModalProps {
   open: boolean;
@@ -15,13 +15,22 @@ interface ComposeModalProps {
 
 export default function ComposeModal({ open, onClose }: ComposeModalProps) {
   const [to, setTo] = useState("");
+  const [fromAddress, setFromAddress] = useState("");
+  const [recipients, setRecipients] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      fetchStats().then((stats) => {
+        setRecipients(stats.recipients);
+        if (!fromAddress && stats.recipients.length > 0) {
+          setFromAddress(stats.recipients[0]);
+        }
+      });
+    } else {
       setTo("");
       setSubject("");
       setBodyHtml("");
@@ -34,7 +43,7 @@ export default function ComposeModal({ open, onClose }: ComposeModalProps) {
     setSending(true);
     setError("");
     try {
-      await sendEmail({ to, subject, bodyHtml });
+      await sendEmail({ to, fromAddress, subject, bodyHtml });
       onClose();
     } catch {
       setError("Failed to send email");
@@ -50,6 +59,23 @@ export default function ComposeModal({ open, onClose }: ComposeModalProps) {
           <DialogTitle className="text-text-primary">Compose</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSend} className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-text-secondary">
+              From
+            </label>
+            <select
+              value={fromAddress}
+              onChange={(e) => setFromAddress(e.target.value)}
+              required
+              className="h-8 w-full rounded-md border border-border-dark bg-input-bg px-3 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+            >
+              {recipients.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-text-secondary">
               To

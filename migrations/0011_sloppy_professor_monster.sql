@@ -1,0 +1,1 @@
+ALTER TABLE `sequence_enrollments` ADD `from_address` text NOT NULL;

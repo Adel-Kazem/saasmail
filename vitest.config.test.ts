@@ -12,7 +12,6 @@ export default defineConfig({
       miniflare: {
         bindings: {
           RESEND_API_KEY: "re_test_fake_key",
-          RESEND_EMAIL_FROM: "test@cmail.test",
         },
       },
     }),

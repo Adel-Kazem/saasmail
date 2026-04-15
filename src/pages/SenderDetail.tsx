@@ -247,6 +247,7 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
         senderId={sender.id}
         senderName={sender.name}
         senderEmail={sender.email}
+        recipients={recipients}
         open={enrollModalOpen}
         onClose={() => setEnrollModalOpen(false)}
         onEnrolled={refreshEnrollment}

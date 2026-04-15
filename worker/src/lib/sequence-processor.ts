@@ -57,14 +57,12 @@ export async function handleQueueBatch(
 ): Promise<void> {
   const db = drizzle(env.DB, { schema });
   const resend = new Resend(env.RESEND_API_KEY);
-  const fromAddress = env.RESEND_EMAIL_FROM;
 
   for (const msg of batch.messages) {
     try {
       await processSequenceEmail(
         db,
         resend,
-        fromAddress,
         msg.body.sequenceEmailId,
       );
       msg.ack();
@@ -81,7 +79,6 @@ export async function handleQueueBatch(
 async function processSequenceEmail(
   db: ReturnType<typeof drizzle>,
   resend: Resend,
-  fromAddress: string,
   sequenceEmailId: string,
 ): Promise<void> {
   const now = Math.floor(Date.now() / 1000);
@@ -108,6 +105,8 @@ async function processSequenceEmail(
 
   if (enrollmentRows.length === 0) return;
   const enrollment = enrollmentRows[0];
+
+  const fromAddress = enrollment.fromAddress;
 
   if (enrollment.status !== "active") {
     // Enrollment was cancelled while queued — mark email as cancelled

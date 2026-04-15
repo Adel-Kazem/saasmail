@@ -248,6 +248,7 @@ const sendTemplateRoute = createRoute({
         "application/json": {
           schema: z.object({
             to: z.string().email(),
+            fromAddress: z.string().email(),
             variables: z.record(z.string(), z.string()).optional().default({}),
           }),
         },
@@ -281,7 +282,7 @@ const sendTemplateRoute = createRoute({
 emailTemplatesRouter.openapi(sendTemplateRoute, async (c) => {
   const db = c.get("db");
   const { slug } = c.req.valid("param");
-  const { to, variables } = c.req.valid("json");
+  const { to, fromAddress, variables } = c.req.valid("json");
 
   // Look up template
   const rows = await db
@@ -317,7 +318,6 @@ emailTemplatesRouter.openapi(sendTemplateRoute, async (c) => {
   const renderedHtml = interpolate(template.bodyHtml, variables);
 
   // Send via Resend
-  const fromAddress = c.env.RESEND_EMAIL_FROM;
   const resend = new Resend(c.env.RESEND_API_KEY);
   const result = await resend.emails.send({
     from: fromAddress,
