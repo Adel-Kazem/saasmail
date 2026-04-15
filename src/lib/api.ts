@@ -119,3 +119,53 @@ export async function fetchStats(recipient?: string): Promise<Stats> {
   const qs = recipient ? `?recipient=${recipient}` : "";
   return apiFetch(`/api/stats${qs}`);
 }
+
+export interface EmailTemplate {
+  id: string;
+  slug: string;
+  name: string;
+  subject: string;
+  bodyHtml: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function fetchTemplates(): Promise<EmailTemplate[]> {
+  return apiFetch("/api/email-templates");
+}
+
+export async function fetchTemplate(slug: string): Promise<EmailTemplate> {
+  return apiFetch(`/api/email-templates/${slug}`);
+}
+
+export async function createTemplate(data: {
+  slug: string;
+  name: string;
+  subject: string;
+  bodyHtml: string;
+}): Promise<EmailTemplate> {
+  return apiFetch("/api/email-templates", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateTemplate(
+  slug: string,
+  data: { name?: string; subject?: string; bodyHtml?: string }
+): Promise<EmailTemplate> {
+  return apiFetch(`/api/email-templates/${slug}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteTemplate(
+  slug: string
+): Promise<{ success: boolean }> {
+  return apiFetch(`/api/email-templates/${slug}`, {
+    method: "DELETE",
+  });
+}
