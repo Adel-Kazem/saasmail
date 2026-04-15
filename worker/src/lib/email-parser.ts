@@ -34,7 +34,7 @@ export async function parseEmail(
 
   return {
     from: {
-      address: message.from,
+      address: parsed.from?.address || message.from,
       name: parsed.from?.name || "",
     },
     to: message.to,
