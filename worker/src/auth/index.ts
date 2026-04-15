@@ -4,7 +4,10 @@ import { admin, openAPI, jwt } from "better-auth/plugins";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { passkey } from "@better-auth/passkey";
 import { drizzle } from "drizzle-orm/d1";
+import { eq } from "drizzle-orm";
 import { schema } from "../db/schema";
+import { oauthAccessTokens } from "../db/auth.schema";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 
 export function createAuth(env?: CloudflareBindings) {
   const db = env ? drizzle(env.DB, { schema, logger: true }) : ({} as any);
@@ -42,3 +45,30 @@ export function createAuth(env?: CloudflareBindings) {
 }
 
 export const auth = createAuth();
+
+/**
+ * Validate an OAuth bearer token by looking it up in the oauthAccessTokens
+ * table. Returns `{ userId }` on success, or `null` if the token is missing,
+ * unknown, or expired. Used by the MCP route to authenticate requests.
+ */
+export async function getOAuthSession(
+  db: DrizzleD1Database<any>,
+  headers: Headers,
+): Promise<{ userId: string } | null> {
+  const token = headers.get("Authorization")?.replace("Bearer ", "");
+  if (!token) return null;
+
+  const rows = await db
+    .select({
+      userId: oauthAccessTokens.userId,
+      expiresAt: oauthAccessTokens.expiresAt,
+    })
+    .from(oauthAccessTokens)
+    .where(eq(oauthAccessTokens.token, token));
+
+  const record = rows[0];
+  if (!record?.userId) return null;
+  if (record.expiresAt && record.expiresAt < new Date()) return null;
+
+  return { userId: record.userId };
+}

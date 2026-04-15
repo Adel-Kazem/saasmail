@@ -1,17 +1,17 @@
-import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { eq, like } from "drizzle-orm";
+import { Hono } from "hono";
+import { eq, like, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { Resend } from "resend";
-import { createAuth } from "../auth";
+import { getOAuthSession } from "../auth";
 import { senders } from "../db/senders.schema";
 import { emails } from "../db/emails.schema";
 import { sentEmails } from "../db/sent-emails.schema";
 import { cancelSequencesForSender } from "../lib/cancel-sequence";
-import { json200Response, json201Response } from "../lib/helpers";
-import type { Variables } from "../variables";
 import { injectDb } from "../db/middleware";
+import type { Variables } from "../variables";
+import type { DrizzleD1Database } from "drizzle-orm/d1";
 
-export const mcpRouter = new OpenAPIHono<{
+export const mcpRouter = new Hono<{
   Bindings: CloudflareBindings;
   Variables: Variables;
 }>();
@@ -19,56 +19,222 @@ export const mcpRouter = new OpenAPIHono<{
 // Inject DB for MCP routes (since they bypass /api/* middleware)
 mcpRouter.use("*", injectDb);
 
-// OAuth bearer token verification middleware
-mcpRouter.use("*", async (c, next) => {
-  const authHeader = c.req.header("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return c.json({ error: "Missing bearer token" }, 401);
-  }
+// ─── JSON-RPC helpers ─────────────────────────────────────────────────────────
+type JsonRpcId = string | number | null;
 
-  const token = authHeader.slice(7);
-  const auth = createAuth(c.env);
+interface JsonRpcRequest {
+  jsonrpc: "2.0";
+  id?: JsonRpcId;
+  method: string;
+  params?: Record<string, unknown>;
+}
 
-  try {
-    const session = await auth.api.getSession({
-      headers: new Headers({ Authorization: `Bearer ${token}` }),
-    });
+interface JsonRpcResponse {
+  jsonrpc: "2.0";
+  id: JsonRpcId;
+  result?: unknown;
+  error?: { code: number; message: string; data?: unknown };
+}
 
-    if (!session) {
-      return c.json({ error: "Invalid or expired token" }, 401);
-    }
+function jsonRpcResult(id: JsonRpcId, result: unknown): JsonRpcResponse {
+  return { jsonrpc: "2.0", id, result };
+}
 
-    c.set("user", session.user);
-    return next();
-  } catch {
-    return c.json({ error: "Invalid or expired token" }, 401);
-  }
-});
+function jsonRpcError(
+  id: JsonRpcId,
+  code: number,
+  message: string,
+  data?: unknown,
+): JsonRpcResponse {
+  return {
+    jsonrpc: "2.0",
+    id,
+    error: { code, message, ...(data !== undefined ? { data } : {}) },
+  };
+}
 
-// --- LIST SENDERS ---
-const listSendersRoute = createRoute({
-  method: "get",
-  path: "/senders",
-  tags: ["MCP"],
-  description: "List senders with optional search.",
-  request: {
-    query: z.object({
-      q: z.string().optional(),
-      page: z.string().optional(),
-      limit: z.string().optional(),
-    }),
+// ─── Tool definitions ─────────────────────────────────────────────────────────
+const TOOLS = [
+  {
+    name: "cmail_list_senders",
+    description:
+      "List email senders/contacts with optional search. Returns each sender with id, email, name, unread count, and last email timestamp. Use this to discover senders before reading their emails.",
+    annotations: { readOnlyHint: true, title: "List Senders" },
+    inputSchema: {
+      type: "object",
+      properties: {
+        q: {
+          type: "string",
+          description:
+            "Optional search query to filter senders by email address.",
+        },
+        page: {
+          type: "number",
+          description: "Page number (default 1).",
+        },
+        limit: {
+          type: "number",
+          description: "Results per page (default 50).",
+        },
+      },
+      required: [],
+    },
   },
-  responses: {
-    ...json200Response(z.array(z.any()), "List of senders"),
+  {
+    name: "cmail_get_sender",
+    description:
+      "Get details for a single sender by ID. Returns the sender's email, name, unread/total counts, and timestamps.",
+    annotations: { readOnlyHint: true, title: "Get Sender" },
+    inputSchema: {
+      type: "object",
+      properties: {
+        sender_id: {
+          type: "string",
+          description: "The ID of the sender to retrieve.",
+        },
+      },
+      required: ["sender_id"],
+    },
   },
-});
+  {
+    name: "cmail_list_emails",
+    description:
+      "List all emails (received and sent) for a given sender. Returns a chronologically sorted array combining received and sent emails.",
+    annotations: { readOnlyHint: true, title: "List Emails for Sender" },
+    inputSchema: {
+      type: "object",
+      properties: {
+        sender_id: {
+          type: "string",
+          description: "The sender ID whose emails to list.",
+        },
+        page: { type: "number", description: "Page number (default 1)." },
+        limit: {
+          type: "number",
+          description: "Results per page (default 50).",
+        },
+      },
+      required: ["sender_id"],
+    },
+  },
+  {
+    name: "cmail_read_email",
+    description:
+      "Read a single email with its full body. Works for both received and sent emails.",
+    annotations: { readOnlyHint: true, title: "Read Email" },
+    inputSchema: {
+      type: "object",
+      properties: {
+        email_id: {
+          type: "string",
+          description: "The ID of the email to read.",
+        },
+      },
+      required: ["email_id"],
+    },
+  },
+  {
+    name: "cmail_send_email",
+    description:
+      "Compose and send a new email to a recipient. Provide the recipient address, subject, and HTML body.",
+    annotations: { readOnlyHint: false, title: "Send Email" },
+    inputSchema: {
+      type: "object",
+      properties: {
+        to: {
+          type: "string",
+          description: "Recipient email address.",
+        },
+        subject: {
+          type: "string",
+          description: "Email subject line.",
+        },
+        body_html: {
+          type: "string",
+          description: "Email body as HTML.",
+        },
+        body_text: {
+          type: "string",
+          description: "Optional plain-text version of the email body.",
+        },
+      },
+      required: ["to", "subject", "body_html"],
+    },
+  },
+  {
+    name: "cmail_reply_email",
+    description:
+      "Reply to a received email. The reply is sent to the original sender with the correct In-Reply-To header.",
+    annotations: { readOnlyHint: false, title: "Reply to Email" },
+    inputSchema: {
+      type: "object",
+      properties: {
+        email_id: {
+          type: "string",
+          description: "The ID of the received email to reply to.",
+        },
+        body_html: {
+          type: "string",
+          description: "Reply body as HTML.",
+        },
+        body_text: {
+          type: "string",
+          description: "Optional plain-text version of the reply body.",
+        },
+      },
+      required: ["email_id", "body_html"],
+    },
+  },
+  {
+    name: "cmail_mark_email",
+    description: "Mark an email as read or unread.",
+    annotations: { readOnlyHint: false, title: "Mark Email Read/Unread" },
+    inputSchema: {
+      type: "object",
+      properties: {
+        email_id: {
+          type: "string",
+          description: "The ID of the email to update.",
+        },
+        is_read: {
+          type: "boolean",
+          description: "Set to true to mark as read, false for unread.",
+        },
+      },
+      required: ["email_id", "is_read"],
+    },
+  },
+  {
+    name: "cmail_delete_email",
+    description:
+      "Delete an email (received or sent) by its ID. This action cannot be undone.",
+    annotations: { readOnlyHint: false, title: "Delete Email" },
+    inputSchema: {
+      type: "object",
+      properties: {
+        email_id: {
+          type: "string",
+          description: "The ID of the email to delete.",
+        },
+      },
+      required: ["email_id"],
+    },
+  },
+] as const;
 
-mcpRouter.openapi(listSendersRoute, async (c) => {
-  const db = c.get("db");
-  const { q, page, limit } = c.req.valid("query");
-  const pageNum = parseInt(page ?? "1");
-  const limitNum = parseInt(limit ?? "50");
-  const offset = (pageNum - 1) * limitNum;
+// ─── Tool implementations ─────────────────────────────────────────────────────
+type Db = DrizzleD1Database<any>;
+
+class McpToolError extends Error {}
+
+async function listSenders(
+  db: Db,
+  args: Record<string, unknown>,
+) {
+  const q = args.q as string | undefined;
+  const page = Number(args.page ?? 1);
+  const limit = Number(args.limit ?? 50);
+  const offset = (page - 1) * limit;
 
   let rows;
   if (q) {
@@ -77,90 +243,55 @@ mcpRouter.openapi(listSendersRoute, async (c) => {
       .from(senders)
       .where(like(senders.email, `%${q}%`))
       .orderBy(senders.lastEmailAt)
-      .limit(limitNum)
+      .limit(limit)
       .offset(offset);
   } else {
     rows = await db
       .select()
       .from(senders)
       .orderBy(senders.lastEmailAt)
-      .limit(limitNum)
+      .limit(limit)
       .offset(offset);
   }
+  return rows;
+}
 
-  return c.json(rows, 200);
-});
+async function getSender(db: Db, args: Record<string, unknown>) {
+  const id = args.sender_id as string;
+  if (!id) throw new McpToolError("sender_id is required");
 
-// --- GET SENDER ---
-const getSenderRoute = createRoute({
-  method: "get",
-  path: "/senders/{id}",
-  tags: ["MCP"],
-  description: "Get a single sender.",
-  request: {
-    params: z.object({ id: z.string() }),
-  },
-  responses: {
-    ...json200Response(z.any(), "Sender details"),
-  },
-});
-
-mcpRouter.openapi(getSenderRoute, async (c) => {
-  const db = c.get("db");
-  const { id } = c.req.valid("param");
   const rows = await db
     .select()
     .from(senders)
     .where(eq(senders.id, id))
     .limit(1);
 
-  if (rows.length === 0) {
-    return c.json({ error: "Sender not found" }, 404);
-  }
+  if (rows.length === 0) throw new McpToolError("Sender not found");
+  return rows[0];
+}
 
-  return c.json(rows[0], 200);
-});
+async function listEmails(db: Db, args: Record<string, unknown>) {
+  const senderId = args.sender_id as string;
+  if (!senderId) throw new McpToolError("sender_id is required");
 
-// --- LIST EMAILS FOR SENDER ---
-const listEmailsRoute = createRoute({
-  method: "get",
-  path: "/senders/{id}/emails",
-  tags: ["MCP"],
-  description: "List emails for a sender.",
-  request: {
-    params: z.object({ id: z.string() }),
-    query: z.object({
-      page: z.string().optional(),
-      limit: z.string().optional(),
-    }),
-  },
-  responses: {
-    ...json200Response(z.array(z.any()), "List of emails"),
-  },
-});
-
-mcpRouter.openapi(listEmailsRoute, async (c) => {
-  const db = c.get("db");
-  const { id } = c.req.valid("param");
-  const { page, limit } = c.req.valid("query");
-  const pageNum = parseInt(page ?? "1");
-  const limitNum = parseInt(limit ?? "50");
-  const offset = (pageNum - 1) * limitNum;
+  const page = Number(args.page ?? 1);
+  const limit = Number(args.limit ?? 50);
+  const offset = (page - 1) * limit;
 
   const received = await db
     .select()
     .from(emails)
-    .where(eq(emails.senderId, id))
+    .where(eq(emails.senderId, senderId))
     .orderBy(emails.receivedAt)
-    .limit(limitNum)
+    .limit(limit)
     .offset(offset);
 
   const sent = await db
     .select()
     .from(sentEmails)
-    .where(eq(sentEmails.senderId, id))
+    .where(eq(sentEmails.senderId, senderId))
     .orderBy(sentEmails.sentAt)
-    .limit(limitNum);
+    .limit(limit);
 
   const combined = [
     ...received.map((e) => ({ ...e, type: "received" as const })),
@@ -171,85 +302,48 @@ mcpRouter.openapi(listEmailsRoute, async (c) => {
     return bTime - aTime;
   });
 
-  return c.json(combined, 200);
-});
+  return combined;
+}
 
-// --- READ EMAIL ---
-const readEmailRoute = createRoute({
-  method: "get",
-  path: "/emails/{id}",
-  tags: ["MCP"],
-  description: "Read a single email with full body.",
-  request: {
-    params: z.object({ id: z.string() }),
-  },
-  responses: {
-    ...json200Response(z.any(), "Email details"),
-  },
-});
-
-mcpRouter.openapi(readEmailRoute, async (c) => {
-  const db = c.get("db");
-  const { id } = c.req.valid("param");
+async function readEmail(db: Db, args: Record<string, unknown>) {
+  const id = args.email_id as string;
+  if (!id) throw new McpToolError("email_id is required");
 
   const received = await db
     .select()
     .from(emails)
     .where(eq(emails.id, id))
     .limit(1);
-
-  if (received.length > 0) {
-    return c.json({ ...received[0], type: "received" }, 200);
-  }
+  if (received.length > 0) return { ...received[0], type: "received" };
 
   const sent = await db
     .select()
     .from(sentEmails)
     .where(eq(sentEmails.id, id))
     .limit(1);
+  if (sent.length > 0) return { ...sent[0], type: "sent" };
 
-  if (sent.length > 0) {
-    return c.json({ ...sent[0], type: "sent" }, 200);
+  throw new McpToolError("Email not found");
+}
+
+async function sendEmail(
+  db: Db,
+  env: CloudflareBindings,
+  args: Record<string, unknown>,
+) {
+  const to = args.to as string;
+  const subject = args.subject as string;
+  const bodyHtml = args.body_html as string;
+  const bodyText = args.body_text as string | undefined;
+
+  if (!to || !subject || !bodyHtml) {
+    throw new McpToolError("to, subject, and body_html are required");
   }
 
-  return c.json({ error: "Email not found" }, 404);
-});
-
-// --- SEND EMAIL ---
-const sendEmailRoute = createRoute({
-  method: "post",
-  path: "/send",
-  tags: ["MCP"],
-  description: "Compose and send a new email.",
-  request: {
-    body: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            to: z.string().email(),
-            subject: z.string(),
-            bodyHtml: z.string(),
-            bodyText: z.string().optional(),
-          }),
-        },
-      },
-    },
-  },
-  responses: {
-    ...json201Response(
-      z.object({ id: z.string(), status: z.string() }),
-      "Email sent",
-    ),
-  },
-});
-
-mcpRouter.openapi(sendEmailRoute, async (c) => {
-  const db = c.get("db");
-  const { to, subject, bodyHtml, bodyText } = c.req.valid("json");
   const now = Math.floor(Date.now() / 1000);
-  const fromAddress = c.env.RESEND_EMAIL_FROM;
+  const fromAddress = env.RESEND_EMAIL_FROM;
 
-  const resend = new Resend(c.env.RESEND_API_KEY);
+  const resend = new Resend(env.RESEND_API_KEY);
   const result = await resend.emails.send({
     from: fromAddress,
     to,
@@ -285,71 +379,46 @@ mcpRouter.openapi(sendEmailRoute, async (c) => {
     await cancelSequencesForSender(db, senderId);
   }
 
-  return c.json({ id, status: result.error ? "failed" : "sent" }, 201);
-});
+  return { id, status: result.error ? "failed" : "sent" };
+}
 
-// --- REPLY EMAIL ---
-const replyEmailRoute = createRoute({
-  method: "post",
-  path: "/send/reply/{emailId}",
-  tags: ["MCP"],
-  description: "Reply to a received email.",
-  request: {
-    params: z.object({ emailId: z.string() }),
-    body: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            bodyHtml: z.string(),
-            bodyText: z.string().optional(),
-          }),
-        },
-      },
-    },
-  },
-  responses: {
-    ...json201Response(
-      z.object({ id: z.string(), status: z.string() }),
-      "Reply sent",
-    ),
-  },
-});
+async function replyEmail(
+  db: Db,
+  env: CloudflareBindings,
+  args: Record<string, unknown>,
+) {
+  const emailId = args.email_id as string;
+  const bodyHtml = args.body_html as string;
+  const bodyText = args.body_text as string | undefined;
 
-mcpRouter.openapi(replyEmailRoute, async (c) => {
-  const db = c.get("db");
-  const { emailId } = c.req.valid("param");
-  const { bodyHtml, bodyText } = c.req.valid("json");
+  if (!emailId || !bodyHtml) {
+    throw new McpToolError("email_id and body_html are required");
+  }
+
   const now = Math.floor(Date.now() / 1000);
-  const fromAddress = c.env.RESEND_EMAIL_FROM;
+  const fromAddress = env.RESEND_EMAIL_FROM;
 
   const original = await db
     .select()
     .from(emails)
     .where(eq(emails.id, emailId))
     .limit(1);
-
-  if (original.length === 0) {
-    return c.json({ error: "Email not found" }, 404);
-  }
+  if (original.length === 0) throw new McpToolError("Email not found");
 
   const orig = original[0];
-
   const sender = await db
     .select({ email: senders.email })
     .from(senders)
     .where(eq(senders.id, orig.senderId))
     .limit(1);
-
-  if (sender.length === 0) {
-    return c.json({ error: "Sender not found" }, 404);
-  }
+  if (sender.length === 0) throw new McpToolError("Sender not found");
 
   const toAddress = sender[0].email;
   const subject = orig.subject?.startsWith("Re: ")
     ? orig.subject
     : `Re: ${orig.subject || ""}`;
 
-  const resend = new Resend(c.env.RESEND_API_KEY);
+  const resend = new Resend(env.RESEND_API_KEY);
   const result = await resend.emails.send({
     from: fromAddress,
     to: toAddress,
@@ -377,70 +446,37 @@ mcpRouter.openapi(replyEmailRoute, async (c) => {
 
   await cancelSequencesForSender(db, orig.senderId);
 
-  return c.json({ id, status: result.error ? "failed" : "sent" }, 201);
-});
+  return { id, status: result.error ? "failed" : "sent" };
+}
 
-// --- MARK READ/UNREAD ---
-const markReadRoute = createRoute({
-  method: "patch",
-  path: "/emails/{id}",
-  tags: ["MCP"],
-  description: "Mark an email as read or unread.",
-  request: {
-    params: z.object({ id: z.string() }),
-    body: {
-      content: {
-        "application/json": {
-          schema: z.object({ isRead: z.boolean() }),
-        },
-      },
-    },
-  },
-  responses: {
-    ...json200Response(z.object({ success: z.boolean() }), "Updated"),
-  },
-});
+async function markEmail(db: Db, args: Record<string, unknown>) {
+  const id = args.email_id as string;
+  const isRead = args.is_read as boolean;
 
-mcpRouter.openapi(markReadRoute, async (c) => {
-  const db = c.get("db");
-  const { id } = c.req.valid("param");
-  const { isRead } = c.req.valid("json");
+  if (!id || typeof isRead !== "boolean") {
+    throw new McpToolError("email_id and is_read are required");
+  }
 
   await db
     .update(emails)
     .set({ isRead: isRead ? 1 : 0 })
     .where(eq(emails.id, id));
 
-  return c.json({ success: true }, 200);
-});
+  return { success: true };
+}
 
-// --- DELETE EMAIL ---
-const deleteEmailRoute = createRoute({
-  method: "delete",
-  path: "/emails/{id}",
-  tags: ["MCP"],
-  description: "Delete an email.",
-  request: {
-    params: z.object({ id: z.string() }),
-  },
-  responses: {
-    ...json200Response(z.object({ success: z.boolean() }), "Deleted"),
-  },
-});
-
-mcpRouter.openapi(deleteEmailRoute, async (c) => {
-  const db = c.get("db");
-  const { id } = c.req.valid("param");
+async function deleteEmail(db: Db, args: Record<string, unknown>) {
+  const id = args.email_id as string;
+  if (!id) throw new McpToolError("email_id is required");
 
   const received = await db
     .select({ id: emails.id })
     .from(emails)
     .where(eq(emails.id, id))
     .limit(1);
-
   if (received.length > 0) {
     await db.delete(emails).where(eq(emails.id, id));
-    return c.json({ success: true }, 200);
+    return { success: true };
   }
 
   const sent = await db
@@ -448,11 +484,165 @@ mcpRouter.openapi(deleteEmailRoute, async (c) => {
     .from(sentEmails)
     .where(eq(sentEmails.id, id))
     .limit(1);
-
   if (sent.length > 0) {
     await db.delete(sentEmails).where(eq(sentEmails.id, id));
-    return c.json({ success: true }, 200);
+    return { success: true };
   }
 
-  return c.json({ error: "Email not found" }, 404);
+  throw new McpToolError("Email not found");
+}
+
+async function callTool(
+  name: string,
+  args: Record<string, unknown>,
+  db: Db,
+  env: CloudflareBindings,
+) {
+  switch (name) {
+    case "cmail_list_senders":
+      return listSenders(db, args);
+    case "cmail_get_sender":
+      return getSender(db, args);
+    case "cmail_list_emails":
+      return listEmails(db, args);
+    case "cmail_read_email":
+      return readEmail(db, args);
+    case "cmail_send_email":
+      return sendEmail(db, env, args);
+    case "cmail_reply_email":
+      return replyEmail(db, env, args);
+    case "cmail_mark_email":
+      return markEmail(db, args);
+    case "cmail_delete_email":
+      return deleteEmail(db, args);
+    default:
+      throw new McpToolError(`Unknown tool: ${name}`);
+  }
+}
+
+// ─── JSON-RPC dispatcher ──────────────────────────────────────────────────────
+async function handleRpcMessage(
+  msg: JsonRpcRequest,
+  db: Db,
+  env: CloudflareBindings,
+): Promise<JsonRpcResponse | null> {
+  if (!msg || msg.jsonrpc !== "2.0" || typeof msg.method !== "string") {
+    return jsonRpcError(msg?.id ?? null, -32600, "Invalid Request");
+  }
+
+  const id = msg.id ?? null;
+  const isNotification = msg.id === undefined || msg.id === null;
+
+  try {
+    switch (msg.method) {
+      case "initialize":
+        return jsonRpcResult(id, {
+          protocolVersion: "2025-06-18",
+          capabilities: { tools: { listChanged: false } },
+          serverInfo: {
+            name: "cmail",
+            title: "cmail",
+            version: "0.1.0",
+            description:
+              "MCP server for cmail — read, send, and manage emails. Exposes tools to list senders, browse email threads, compose new messages, and manage your inbox.",
+          },
+        });
+
+      case "notifications/initialized":
+      case "notifications/cancelled":
+        return null;
+
+      case "ping":
+        return jsonRpcResult(id, {});
+
+      case "tools/list":
+        return jsonRpcResult(id, { tools: TOOLS });
+
+      case "tools/call": {
+        const params = (msg.params ?? {}) as {
+          name?: string;
+          arguments?: Record<string, unknown>;
+        };
+        if (typeof params.name !== "string") {
+          return jsonRpcError(id, -32602, "Invalid params: missing tool name");
+        }
+        try {
+          const result = await callTool(
+            params.name,
+            params.arguments ?? {},
+            db,
+            env,
+          );
+          return jsonRpcResult(id, {
+            content: [
+              { type: "text", text: JSON.stringify(result, null, 2) },
+            ],
+          });
+        } catch (err) {
+          const message =
+            err instanceof McpToolError
+              ? err.message
+              : "Tool execution failed";
+          return jsonRpcResult(id, {
+            isError: true,
+            content: [{ type: "text", text: message }],
+          });
+        }
+      }
+
+      default:
+        if (isNotification) return null;
+        return jsonRpcError(id, -32601, `Method not found: ${msg.method}`);
+    }
+  } catch (err) {
+    return jsonRpcError(
+      id,
+      -32000,
+      err instanceof Error ? err.message : "Internal error",
+    );
+  }
+}
+
+// ─── Route handlers ───────────────────────────────────────────────────────────
+function unauthorizedResponse(baseUrl: string | undefined): Response {
+  return new Response(null, {
+    status: 401,
+    headers: {
+      "WWW-Authenticate": `Bearer resource_metadata="${baseUrl ?? ""}/.well-known/oauth-protected-resource"`,
+    },
+  });
+}
+
+mcpRouter.post("/", async (c) => {
+  const db = c.get("db");
+  const session = await getOAuthSession(db, c.req.raw.headers);
+  if (!session) return unauthorizedResponse(c.env.BASE_URL);
+
+  let body: JsonRpcRequest | JsonRpcRequest[];
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(jsonRpcError(null, -32700, "Parse error"), 400);
+  }
+
+  if (Array.isArray(body)) {
+    const responses = (
+      await Promise.all(
+        body.map((m) => handleRpcMessage(m, db, c.env)),
+      )
+    ).filter((r): r is JsonRpcResponse => r !== null);
+    if (responses.length === 0) return new Response(null, { status: 202 });
+    return c.json(responses);
+  }
+
+  const response = await handleRpcMessage(body, db, c.env);
+  if (response === null) return new Response(null, { status: 202 });
+  return c.json(response);
+});
+
+// MCP streamable-HTTP clients may send a GET to open an SSE stream. We
+// implement stateless request/response over POST, so signal that the server
+// does not offer SSE.
+mcpRouter.get("/", (c) => {
+  return c.body(null, 405, { Allow: "POST" });
 });

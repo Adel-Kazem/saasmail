@@ -4,6 +4,9 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { injectDb } from "./db/middleware";
 import { createAuth } from "./auth";
+import {
+  oauthProviderAuthServerMetadata,
+} from "@better-auth/oauth-provider";
 import { apiKeys } from "./db/api-keys.schema";
 import { users } from "./db/auth.schema";
 import { eq } from "drizzle-orm";
@@ -36,16 +39,16 @@ const app = new OpenAPIHono<{
 // Middleware
 app.use("*", injectDb);
 app.use("*", logger());
+// `exposeHeaders` is required so browser-based MCP clients (e.g.
+// Claude.ai connectors) can read the `WWW-Authenticate` challenge on 401
+// responses to discover the OAuth protected-resource metadata URL, and
+// the optional `Mcp-Session-Id` header. Without these, a cross-origin
+// MCP client sees an opaque 401 and reports "Couldn't reach the MCP server".
 app.use(
   "*",
   cors({
-    origin: (origin, c) => {
-      const trusted = c.env?.TRUSTED_ORIGINS
-        ? c.env.TRUSTED_ORIGINS.split(",")
-        : ["http://localhost:8080"];
-      return trusted.includes(origin) ? origin : trusted[0];
-    },
-    credentials: true,
+    origin: "*",
+    exposeHeaders: ["WWW-Authenticate", "Mcp-Session-Id"],
   }),
 );
 
@@ -146,10 +149,36 @@ app.doc("/doc", {
   info: { title: "cmail API", version: "1.0.0" },
 });
 
-// MCP endpoints (OAuth-protected, not under /api/*)
+// MCP endpoints (JSON-RPC 2.0 over POST, OAuth bearer token auth)
 app.route("/mcp", mcpRouter);
 
-// Well-known OAuth/OIDC discovery endpoints
+// Expose OAuth discovery metadata at the well-known roots so MCP clients
+// (Claude.ai, Claude Code, GitHub Copilot) can discover the authorization
+// server and protected-resource endpoints.
+//
+// /.well-known/oauth-authorization-server: forwarded through the
+// oauthProviderAuthServerMetadata helper so the dynamic baseURL config is
+// resolved from the real request — otherwise endpoint URLs would be wrong.
+app.get("/.well-known/oauth-authorization-server", async (c) => {
+  const auth = createAuth(c.env);
+  return oauthProviderAuthServerMetadata(auth)(c.req.raw);
+});
+
+// /.well-known/oauth-protected-resource: oauthProvider does not expose this
+// RFC 9728 endpoint, so we build the response ourselves. The resource and
+// authorization_servers fields are derived from the request origin so they
+// track whichever domain the client connects to.
+app.get("/.well-known/oauth-protected-resource", (c) => {
+  const origin = new URL(c.req.url).origin;
+  return c.json({
+    resource: origin,
+    authorization_servers: [origin],
+    bearer_methods_supported: ["header"],
+    scopes_supported: ["openid", "profile", "email", "offline_access"],
+  });
+});
+
+// Forward remaining well-known paths (e.g. openid-configuration) to betterauth
 app.all("/.well-known/*", (c) => {
   const auth = createAuth(c.env);
   return auth.handler(c.req.raw);
