@@ -4,8 +4,9 @@ import { authClient } from "@/lib/auth-client";
 
 export default function ConsentPage() {
   const [searchParams] = useSearchParams();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<"allow" | "deny" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<"allowed" | "denied" | null>(null);
 
   const clientId = searchParams.get("client_id");
   const consentCode = searchParams.get("consent_code") ?? "";
@@ -24,34 +25,102 @@ export default function ConsentPage() {
   const scopes = scope.split(" ").filter(Boolean);
 
   async function handleConsent(accept: boolean) {
-    setLoading(true);
+    setLoading(accept ? "allow" : "deny");
     setError(null);
 
     try {
-      const res = await authClient.$fetch("/oauth2/consent", {
+      const res = (await authClient.$fetch("/oauth2/consent", {
         method: "POST",
         body: { accept, consent_code: consentCode },
-      }) as { data?: { redirectURI?: string } };
+      })) as { data?: { redirectURI?: string } };
 
       if (res.data?.redirectURI) {
+        setResult(accept ? "allowed" : "denied");
         window.location.href = res.data.redirectURI;
+      } else {
+        setResult(accept ? "allowed" : "denied");
       }
     } catch (err: any) {
       setError(err.message || "Failed to process consent.");
-      setLoading(false);
+      setLoading(null);
     }
   }
 
-  if (!clientId) {
+  // Invalid request (missing params)
+  if (!clientId || !consentCode) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-main">
         <div className="w-full max-w-sm rounded-xl border border-border-dark bg-card p-6 text-center">
-          <p className="text-sm text-red-400">Invalid authorization request.</p>
+          <p className="text-sm text-red-400">
+            Invalid authorization request.
+          </p>
+          <p className="mt-2 text-xs text-text-tertiary">
+            This authorization request is invalid or has expired.
+          </p>
         </div>
       </div>
     );
   }
 
+  // Post-consent result screen
+  if (result) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-main">
+        <div className="w-full max-w-sm rounded-xl border border-border-dark bg-card p-6 text-center">
+          {result === "allowed" ? (
+            <>
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-900/30 text-2xl text-green-400">
+                &#10003;
+              </div>
+              <h2 className="text-lg font-semibold text-text-primary">
+                Access Granted
+              </h2>
+              <p className="mt-2 text-xs text-text-secondary">
+                Authorization was successful. You can close this window.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-900/30 text-2xl text-text-tertiary">
+                &#10005;
+              </div>
+              <h2 className="text-lg font-semibold text-text-primary">
+                Access Denied
+              </h2>
+              <p className="mt-2 text-xs text-text-secondary">
+                Authorization was denied. You can close this window.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Error screen
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-main">
+        <div className="w-full max-w-sm rounded-xl border border-border-dark bg-card p-6 text-center">
+          <h2 className="text-lg font-semibold text-text-primary">
+            Authorization Failed
+          </h2>
+          <p className="mt-2 text-xs text-red-400">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              setLoading(null);
+            }}
+            className="mt-4 rounded-md border border-border-dark px-4 py-2 text-sm text-text-secondary hover:bg-hover"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Main consent screen
   return (
     <div className="flex min-h-screen items-center justify-center bg-main">
       <div className="w-full max-w-sm rounded-xl border border-border-dark bg-card p-6">
@@ -67,11 +136,11 @@ export default function ConsentPage() {
           </p>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-md bg-red-900/20 px-3 py-2 text-xs text-red-400">
-            {error}
-          </div>
-        )}
+        <div className="mb-4 text-center">
+          <span className="inline-block rounded-md bg-main px-3 py-1.5 font-mono text-[11px] text-text-tertiary">
+            {clientId}
+          </span>
+        </div>
 
         <div className="mb-6">
           <p className="mb-2 text-xs font-medium text-text-secondary">
@@ -95,17 +164,17 @@ export default function ConsentPage() {
         <div className="flex gap-3">
           <button
             onClick={() => handleConsent(false)}
-            disabled={loading}
+            disabled={loading !== null}
             className="flex-1 rounded-md border border-border-dark px-4 py-2 text-sm text-text-secondary hover:bg-hover disabled:opacity-50"
           >
-            Deny
+            {loading === "deny" ? "Denying..." : "Deny"}
           </button>
           <button
             onClick={() => handleConsent(true)}
-            disabled={loading}
+            disabled={loading !== null}
             className="flex-1 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
           >
-            {loading ? "Authorizing..." : "Authorize"}
+            {loading === "allow" ? "Authorizing..." : "Authorize"}
           </button>
         </div>
 
