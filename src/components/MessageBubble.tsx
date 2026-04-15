@@ -29,7 +29,10 @@ export default function MessageBubble({
   const isSent = email.type === "sent";
   const isUnread = email.type === "received" && email.isRead === 0;
 
-  const text = email.bodyText || "";
+  const text = email.bodyText
+    || (email.bodyHtml
+      ? new DOMParser().parseFromString(email.bodyHtml, "text/html").body.textContent ?? ""
+      : "");
   const truncateLength = compact ? 160 : TRUNCATE_LENGTH;
 
   const isTruncated = text.length > truncateLength && !expanded;
