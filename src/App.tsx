@@ -13,6 +13,9 @@ import InviteAcceptPage from "@/pages/InviteAcceptPage";
 import AdminUsersPage from "@/pages/AdminUsersPage";
 import ApiKeysPage from "@/pages/ApiKeysPage";
 import DashboardLayout from "@/components/DashboardLayout";
+import SequencesPage from "@/pages/SequencesPage";
+import SequenceDetailPage from "@/pages/SequenceDetailPage";
+import SequenceEditorPage from "@/pages/SequenceEditorPage";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +75,10 @@ function App() {
               <Route path="/templates" element={<TemplatesPage />} />
               <Route path="/templates/new" element={<TemplateEditorPage />} />
               <Route path="/templates/:slug/edit" element={<TemplateEditorPage />} />
+              <Route path="/sequences" element={<SequencesPage />} />
+              <Route path="/sequences/new" element={<SequenceEditorPage />} />
+              <Route path="/sequences/:id/edit" element={<SequenceEditorPage />} />
+              <Route path="/sequences/:id" element={<SequenceDetailPage />} />
               <Route path="/api-keys" element={<ApiKeysPage />} />
               <Route path="/*" element={<InboxPage />} />
             </Route>

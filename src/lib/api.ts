@@ -285,3 +285,128 @@ export async function generateApiKey(): Promise<{
 export async function revokeApiKey(): Promise<{ success: boolean }> {
   return apiFetch("/api/api-keys", { method: "DELETE" });
 }
+
+// --- Sequences ---
+
+export interface SequenceStep {
+  order: number;
+  templateSlug: string;
+  delayHours: number;
+}
+
+export interface Sequence {
+  id: string;
+  name: string;
+  steps: SequenceStep[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SequenceEmail {
+  id: string;
+  enrollmentId: string;
+  stepOrder: number;
+  templateSlug: string;
+  scheduledAt: number;
+  status: string;
+  sentAt: number | null;
+  sentEmailId: string | null;
+}
+
+export interface SequenceEnrollment {
+  id: string;
+  sequenceId: string;
+  senderId: string;
+  status: string;
+  variables: Record<string, string>;
+  enrolledAt: number;
+  cancelledAt: number | null;
+}
+
+export interface EnrollmentWithDetails extends SequenceEnrollment {
+  senderEmail: string;
+  senderName: string | null;
+  totalSteps: number;
+  sentSteps: number;
+}
+
+export interface SenderEnrollmentInfo {
+  enrollment: SequenceEnrollment | null;
+  scheduledEmails: SequenceEmail[];
+  sequenceName: string | null;
+}
+
+export async function fetchSequences(): Promise<Sequence[]> {
+  return apiFetch("/api/sequences");
+}
+
+export async function fetchSequence(id: string): Promise<Sequence> {
+  return apiFetch(`/api/sequences/${id}`);
+}
+
+export async function createSequence(data: {
+  name: string;
+  steps: SequenceStep[];
+}): Promise<Sequence> {
+  return apiFetch("/api/sequences", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateSequence(
+  id: string,
+  data: { name?: string; steps?: SequenceStep[] }
+): Promise<Sequence> {
+  return apiFetch(`/api/sequences/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteSequence(
+  id: string
+): Promise<{ success: boolean }> {
+  return apiFetch(`/api/sequences/${id}`, { method: "DELETE" });
+}
+
+export async function enrollSender(
+  sequenceId: string,
+  data: {
+    senderId: string;
+    variables?: Record<string, string>;
+    skipSteps?: number[];
+    delayOverrides?: Record<string, number>;
+  }
+): Promise<{
+  enrollment: SequenceEnrollment;
+  scheduledEmails: SequenceEmail[];
+}> {
+  return apiFetch(`/api/sequences/${sequenceId}/enroll`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchSenderEnrollment(
+  senderId: string
+): Promise<SenderEnrollmentInfo> {
+  return apiFetch(`/api/sequences/senders/${senderId}/enrollment`);
+}
+
+export async function cancelEnrollment(
+  enrollmentId: string
+): Promise<{ success: boolean }> {
+  return apiFetch(`/api/sequences/enrollments/${enrollmentId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchSequenceEnrollments(
+  sequenceId: string
+): Promise<EnrollmentWithDetails[]> {
+  return apiFetch(`/api/sequences/${sequenceId}/enrollments`);
+}

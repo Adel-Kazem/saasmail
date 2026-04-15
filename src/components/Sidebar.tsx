@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Mail, FileText, Key, Users, PenSquare, LogOut } from "lucide-react";
+import { Mail, FileText, Key, Users, PenSquare, LogOut, ListOrdered } from "lucide-react";
 import { signOut, useSession } from "@/lib/auth-client";
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: Mail, label: "Inbox", path: "/" },
   { icon: FileText, label: "Templates", path: "/templates" },
+  { icon: ListOrdered, label: "Sequences", path: "/sequences" },
   { icon: Key, label: "API", path: "/api-keys" },
   { icon: Users, label: "Users", path: "/admin/users", adminOnly: true },
 ];
