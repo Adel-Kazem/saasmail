@@ -192,6 +192,8 @@ async function serveOAuthProtectedResource(c: Context<{
 }
 
 app.get("/.well-known/oauth-authorization-server", forwardToOAuthDiscovery);
+// RFC 8414: issuer includes basePath, so clients may request this path
+app.get("/.well-known/oauth-authorization-server/api/auth", forwardToOAuthDiscovery);
 app.get("/.well-known/oauth-protected-resource", serveOAuthProtectedResource);
 
 // Forward remaining well-known paths (e.g. openid-configuration) to betterauth
