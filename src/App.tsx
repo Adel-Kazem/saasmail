@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth-client";
 import { fetchPasskeyStatus } from "@/lib/api";
@@ -12,28 +12,33 @@ import SetupPasskeyPage from "@/pages/SetupPasskeyPage";
 import InviteAcceptPage from "@/pages/InviteAcceptPage";
 import AdminUsersPage from "@/pages/AdminUsersPage";
 import ApiKeysPage from "@/pages/ApiKeysPage";
+import DashboardLayout from "@/components/DashboardLayout";
 
 const queryClient = new QueryClient();
 
-function AuthGuard({ children }: { children: React.ReactNode }) {
+function AuthGuard() {
   const { data: session, isPending } = useSession();
   const [passkeyStatus, setPasskeyStatus] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
-    fetchPasskeyStatus().then((res) => {
-      if (!cancelled) setPasskeyStatus(res.hasPasskey);
-    }).catch(() => {
-      if (!cancelled) setPasskeyStatus(false);
-    });
-    return () => { cancelled = true; };
+    fetchPasskeyStatus()
+      .then((res) => {
+        if (!cancelled) setPasskeyStatus(res.hasPasskey);
+      })
+      .catch(() => {
+        if (!cancelled) setPasskeyStatus(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [session]);
 
-  if (isPending) {
+  if (isPending || (session && passkeyStatus === null)) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-neutral-500">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-main">
+        <p className="text-text-secondary">Loading...</p>
       </div>
     );
   }
@@ -42,19 +47,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (passkeyStatus === null) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-neutral-500">Loading...</p>
-      </div>
-    );
-  }
-
   if (!passkeyStatus) {
     return <Navigate to="/setup-passkey" replace />;
   }
 
-  return <>{children}</>;
+  return <Outlet />;
 }
 
 function App() {
@@ -62,58 +59,23 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/invite/:token" element={<InviteAcceptPage />} />
           <Route path="/setup-passkey" element={<SetupPasskeyPage />} />
-          <Route
-            path="/admin/users"
-            element={
-              <AuthGuard>
-                <AdminUsersPage />
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/templates"
-            element={
-              <AuthGuard>
-                <TemplatesPage />
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/templates/new"
-            element={
-              <AuthGuard>
-                <TemplateEditorPage />
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/templates/:slug/edit"
-            element={
-              <AuthGuard>
-                <TemplateEditorPage />
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/api-keys"
-            element={
-              <AuthGuard>
-                <ApiKeysPage />
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/*"
-            element={
-              <AuthGuard>
-                <InboxPage />
-              </AuthGuard>
-            }
-          />
+
+          {/* Authenticated routes with shared layout */}
+          <Route element={<AuthGuard />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/templates" element={<TemplatesPage />} />
+              <Route path="/templates/new" element={<TemplateEditorPage />} />
+              <Route path="/templates/:slug/edit" element={<TemplateEditorPage />} />
+              <Route path="/api-keys" element={<ApiKeysPage />} />
+              <Route path="/*" element={<InboxPage />} />
+            </Route>
+          </Route>
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
