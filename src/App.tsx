@@ -23,7 +23,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import SequencesPage from "@/pages/SequencesPage";
 import SequenceDetailPage from "@/pages/SequenceDetailPage";
 import SequenceEditorPage from "@/pages/SequenceEditorPage";
-import SettingsPage from "./pages/SettingsPage";
+import InboxesPage from "./pages/InboxesPage";
 
 const queryClient = new QueryClient();
 
@@ -95,7 +95,8 @@ function App() {
               />
               <Route path="/sequences/:id" element={<SequenceDetailPage />} />
               <Route path="/api-keys" element={<ApiKeysPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/inboxes" element={<InboxesPage />} />
+              <Route path="/settings" element={<Navigate to="/inboxes" replace />} />
               <Route path="/*" element={<InboxPage />} />
             </Route>
           </Route>

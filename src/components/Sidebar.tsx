@@ -30,7 +30,7 @@ const navItems: NavItem[] = [
   { icon: FileText, label: "Templates", path: "/templates" },
   { icon: ListOrdered, label: "Sequences", path: "/sequences" },
   { icon: Key, label: "API", path: "/api-keys" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: Settings, label: "Inboxes", path: "/inboxes", adminOnly: true },
   { icon: Users, label: "Users", path: "/admin/users", adminOnly: true },
 ];
 
