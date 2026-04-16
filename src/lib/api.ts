@@ -470,35 +470,51 @@ export async function fetchSequenceEnrollments(
   return apiFetch(`/api/sequences/${sequenceId}/enrollments`);
 }
 
-// --- Sender Identities ---
+// --- Admin Inboxes ---
 
-export interface SenderIdentity {
+export interface AdminInbox {
   email: string;
-  displayName: string;
-  createdAt: number;
-  updatedAt: number;
+  displayName: string | null;
+  assignedUserIds: string[];
 }
 
-export async function fetchSenderIdentities(): Promise<SenderIdentity[]> {
-  return apiFetch("/api/sender-identities");
+export async function fetchAdminInboxes(): Promise<AdminInbox[]> {
+  return apiFetch("/api/admin/inboxes");
 }
 
-export async function upsertSenderIdentity(
+export async function updateInboxDisplayName(
   email: string,
-  displayName: string,
-): Promise<SenderIdentity> {
-  return apiFetch(`/api/sender-identities/${encodeURIComponent(email)}`, {
-    method: "PUT",
+  displayName: string | null,
+): Promise<{ email: string; displayName: string | null }> {
+  return apiFetch(`/api/admin/inboxes/${encodeURIComponent(email)}`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ displayName }),
   });
 }
 
-export async function deleteSenderIdentity(
+export async function updateInboxAssignments(
   email: string,
-): Promise<{ success: boolean }> {
-  return apiFetch(`/api/sender-identities/${encodeURIComponent(email)}`, {
-    method: "DELETE",
-  });
+  userIds: string[],
+): Promise<{ email: string; assignedUserIds: string[] }> {
+  return apiFetch(
+    `/api/admin/inboxes/${encodeURIComponent(email)}/assignments`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userIds }),
+    },
+  );
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string | null;
+}
+
+export async function fetchAdminUsers(): Promise<AdminUser[]> {
+  return apiFetch("/api/admin/users");
 }
 
