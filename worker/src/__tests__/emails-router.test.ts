@@ -57,6 +57,42 @@ describe("emails router", () => {
       expect(data[1].type).toBe("received");
     });
 
+    it("includes sent replies when filtering by recipient", async () => {
+      const db = getDb();
+      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestEmail({
+        id: "e1",
+        senderId: "s1",
+        recipient: "inbox@cmail.test",
+      });
+
+      const now = Math.floor(Date.now() / 1000);
+      await db.insert(sentEmails).values({
+        id: "se1",
+        senderId: "s1",
+        fromAddress: "inbox@cmail.test",
+        toAddress: "a@test.com",
+        subject: "Re: Test Subject",
+        bodyHtml: "<p>Reply</p>",
+        bodyText: null,
+        resendId: null,
+        status: "sent",
+        sentAt: now + 10,
+        createdAt: now + 10,
+      });
+
+      // Filter by recipient (inbox address) — sent replies should still appear
+      const res = await authFetch(
+        "/api/emails/by-sender/s1?recipient=inbox@cmail.test",
+        { apiKey },
+      );
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data).toHaveLength(2);
+      expect(data[0].type).toBe("sent");
+      expect(data[1].type).toBe("received");
+    });
+
     it("paginates results", async () => {
       await createTestSender({ id: "s1", email: "a@test.com" });
       for (let i = 0; i < 5; i++) {

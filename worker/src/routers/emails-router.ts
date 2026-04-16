@@ -87,7 +87,7 @@ emailsRouter.openapi(listSenderEmailsRoute, async (c) => {
     sentConditions.push(like(sentEmails.subject, `%${q}%`));
   }
   if (recipient) {
-    sentConditions.push(eq(sentEmails.toAddress, recipient));
+    sentConditions.push(eq(sentEmails.fromAddress, recipient));
   }
 
   const sent = await db
