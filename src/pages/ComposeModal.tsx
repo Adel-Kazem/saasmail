@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import TiptapEditor from "@/components/TiptapEditor";
 import { sendEmail, fetchStats } from "@/lib/api";
+import { getFromLabel } from "@/lib/format";
 
 interface ComposeModalProps {
   open: boolean;
@@ -42,11 +43,6 @@ export default function ComposeModal({ open, onClose }: ComposeModalProps) {
     }
   }, [open]);
 
-  function getFromLabel(email: string): string {
-    const identity = senderIdentities.find((s) => s.email === email);
-    return identity ? `${identity.displayName} <${email}>` : email;
-  }
-
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     setSending(true);
@@ -80,7 +76,7 @@ export default function ComposeModal({ open, onClose }: ComposeModalProps) {
             >
               {recipients.map((r) => (
                 <option key={r} value={r}>
-                  {getFromLabel(r)}
+                  {getFromLabel(r, senderIdentities)}
                 </option>
               ))}
             </select>

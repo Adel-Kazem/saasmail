@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
 import TiptapEditor from "@/components/TiptapEditor";
 import { replyToEmail, fetchTemplates, type EmailTemplate } from "@/lib/api";
+import { getFromLabel } from "@/lib/format";
 
 interface ReplyComposerProps {
   emailId: string;
@@ -36,11 +37,6 @@ export default function ReplyComposer({
   onClose,
   onSent,
 }: ReplyComposerProps) {
-  function getFromLabel(email: string): string {
-    const identity = senderIdentities.find((s) => s.email === email);
-    return identity ? `${identity.displayName} <${email}>` : email;
-  }
-
   const [tab, setTab] = useState<Tab>("freeform");
   const [fromAddress, setFromAddress] = useState(recipients[0] ?? "");
   const [bodyHtml, setBodyHtml] = useState("");
@@ -143,7 +139,7 @@ export default function ReplyComposer({
           >
             {recipients.map((r) => (
               <option key={r} value={r}>
-                {getFromLabel(r)}
+                {getFromLabel(r, senderIdentities)}
               </option>
             ))}
           </select>
