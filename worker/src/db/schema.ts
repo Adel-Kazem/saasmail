@@ -9,6 +9,7 @@ import { apiKeys } from "./api-keys.schema";
 import { sequences } from "./sequences.schema";
 import { sequenceEnrollments } from "./sequence-enrollments.schema";
 import { sequenceEmails } from "./sequence-emails.schema";
+import { senderIdentities } from "./sender-identities.schema";
 
 export const schema = {
   ...authSchema,
@@ -22,4 +23,5 @@ export const schema = {
   sequences,
   sequenceEnrollments,
   sequenceEmails,
+  senderIdentities,
 } as const;

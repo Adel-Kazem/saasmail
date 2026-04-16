@@ -10,4 +10,5 @@ export * from "./api-keys.schema";
 export * from "./sequences.schema";
 export * from "./sequence-enrollments.schema";
 export * from "./sequence-emails.schema";
+export * from "./sender-identities.schema";
 export * from "./schema";

@@ -85,6 +85,20 @@
       "when": 1776306171365,
       "tag": "0011_sloppy_professor_monster",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1776317507974,
+      "tag": "0012_rename_sender_to_person",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1776317520217,
+      "tag": "0013_add_sender_identities",
+      "breakpoints": true
     }
   ]
 }
