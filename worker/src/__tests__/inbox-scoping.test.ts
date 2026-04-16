@@ -83,3 +83,26 @@ describe("stats scoping", () => {
     expect(body.recipients).toEqual([]);
   });
 });
+
+describe("emails scoping", () => {
+  it("member listing by-person excludes disallowed recipients", async () => {
+    const { apiKey, userId } = await createTestUser({
+      id: "u-mem",
+      role: "member",
+      email: "m@x.com",
+    });
+    await createTestPerson({ id: "p1" });
+    await createTestEmail({ id: "e1", personId: "p1", recipient: "a@x.com" });
+    await createTestEmail({
+      id: "e2",
+      personId: "p1",
+      recipient: "b@x.com",
+      messageId: "m2",
+    });
+    await grantInbox(userId, "a@x.com");
+    const res = await authFetch("/api/emails/by-person/p1", { apiKey });
+    const body = (await res.json()) as Array<{ recipient: string }>;
+    const recipients = body.map((e) => e.recipient);
+    expect(recipients).toEqual(["a@x.com"]);
+  });
+});

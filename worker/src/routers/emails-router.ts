@@ -6,6 +6,7 @@ import { attachments } from "../db/attachments.schema";
 import { people } from "../db/people.schema";
 import { json200Response, escapeLike } from "../lib/helpers";
 import { deleteEmailWithAttachments } from "../lib/delete-email";
+import { inboxFilter } from "../lib/inbox-permissions";
 import type { Variables } from "../variables";
 
 export const emailsRouter = new OpenAPIHono<{
@@ -58,6 +59,8 @@ emailsRouter.openapi(listPersonEmailsRoute, async (c) => {
   const { q, recipient, page, limit } = c.req.valid("query");
   const offset = (page - 1) * limit;
 
+  const allowed = c.get("allowedInboxes")!;
+
   // Build conditions for received emails
   const receivedConditions: any[] = [eq(emails.personId, personId)];
   if (q) {
@@ -66,6 +69,8 @@ emailsRouter.openapi(listPersonEmailsRoute, async (c) => {
   if (recipient) {
     receivedConditions.push(eq(emails.recipient, recipient));
   }
+  const recvScope = inboxFilter(allowed, emails.recipient);
+  if (recvScope) receivedConditions.push(recvScope);
 
   const received = await db
     .select({
@@ -89,6 +94,8 @@ emailsRouter.openapi(listPersonEmailsRoute, async (c) => {
   if (recipient) {
     sentConditions.push(eq(sentEmails.fromAddress, recipient));
   }
+  const sentScope = inboxFilter(allowed, sentEmails.fromAddress);
+  if (sentScope) sentConditions.push(sentScope);
 
   const sent = await db
     .select({
@@ -216,6 +223,15 @@ emailsRouter.openapi(getEmailRoute, async (c) => {
     return c.json({ error: "Email not found" }, 404);
   }
 
+  const allowed = c.get("allowedInboxes")!;
+  if (
+    !allowed.isAdmin &&
+    row[0].recipient &&
+    !allowed.inboxes.includes(row[0].recipient)
+  ) {
+    return c.json({ error: "Email not found" }, 404);
+  }
+
   const atts = await db
     .select()
     .from(attachments)
@@ -263,12 +279,21 @@ emailsRouter.openapi(patchEmailRoute, async (c) => {
   const { isRead } = c.req.valid("json");
 
   const email = await db
-    .select({ personId: emails.personId, isRead: emails.isRead })
+    .select({
+      personId: emails.personId,
+      isRead: emails.isRead,
+      recipient: emails.recipient,
+    })
     .from(emails)
     .where(eq(emails.id, id))
     .limit(1);
 
   if (email.length === 0) {
+    return c.json({ error: "Email not found" }, 404);
+  }
+
+  const allowed = c.get("allowedInboxes")!;
+  if (!allowed.isAdmin && !allowed.inboxes.includes(email[0].recipient)) {
     return c.json({ error: "Email not found" }, 404);
   }
 
@@ -320,15 +345,22 @@ const bulkPatchRoute = createRoute({
 emailsRouter.openapi(bulkPatchRoute, async (c) => {
   const db = c.get("db");
   const { ids, isRead } = c.req.valid("json");
+  const allowed = c.get("allowedInboxes")!;
 
   for (const id of ids) {
     const email = await db
-      .select({ personId: emails.personId, isRead: emails.isRead })
+      .select({
+        personId: emails.personId,
+        isRead: emails.isRead,
+        recipient: emails.recipient,
+      })
       .from(emails)
       .where(eq(emails.id, id))
       .limit(1);
 
     if (email.length === 0) continue;
+    if (!allowed.isAdmin && !allowed.inboxes.includes(email[0].recipient))
+      continue;
 
     const wasRead = email[0].isRead === 1;
     if (wasRead !== isRead) {
@@ -370,6 +402,18 @@ emailsRouter.openapi(deleteEmailRoute, async (c) => {
   const db = c.get("db");
   const r2 = c.env.R2;
   const { id } = c.req.valid("param");
+
+  const allowed = c.get("allowedInboxes")!;
+  if (!allowed.isAdmin) {
+    const row = await db
+      .select({ recipient: emails.recipient })
+      .from(emails)
+      .where(eq(emails.id, id))
+      .limit(1);
+    if (row.length > 0 && !allowed.inboxes.includes(row[0].recipient)) {
+      return c.json({ error: "Email not found" }, 404);
+    }
+  }
 
   const result = await deleteEmailWithAttachments(db, r2, id);
   if (!result) {
