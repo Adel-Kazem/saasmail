@@ -237,7 +237,7 @@ export default function AdminUsersPage() {
                       className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
                         user.hasPasskey
                           ? "bg-accent/20 text-accent"
-                          : "bg-bg-mutedtext-text-tertiary"
+                          : "bg-bg-muted text-text-tertiary"
                       }`}
                     >
                       {user.hasPasskey ? "Passkey" : "No passkey"}
@@ -272,7 +272,7 @@ export default function AdminUsersPage() {
                                 user.role === "admin" ? "member" : "admin",
                               )
                             }
-                            className="text-xs text-text-secondary focus:bg-bg-mutedfocus:text-text-primary"
+                            className="text-xs text-text-secondary focus:bg-bg-muted focus:text-text-primary"
                           >
                             Make {user.role === "admin" ? "member" : "admin"}
                           </DropdownMenuItem>
@@ -325,7 +325,7 @@ export default function AdminUsersPage() {
                         st === "used"
                           ? "bg-accent/20 text-accent"
                           : st === "expired"
-                            ? "bg-bg-mutedtext-text-tertiary"
+                            ? "bg-bg-muted text-text-tertiary"
                             : "border border-border text-text-secondary"
                       }`}
                     >
