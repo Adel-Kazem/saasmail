@@ -11,6 +11,7 @@ import { emailTemplates } from "../db/email-templates.schema";
 import { interpolate, extractVariables } from "../lib/interpolate";
 import type { Variables } from "../variables";
 import { formatFromAddress } from "../lib/format-from-address";
+import { assertInboxAllowed } from "../lib/inbox-permissions";
 
 export const sendRouter = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -54,6 +55,8 @@ const sendEmailRoute = createRoute({
 sendRouter.openapi(sendEmailRoute, async (c) => {
   const db = c.get("db");
   const { to, fromAddress, subject, bodyHtml, bodyText } = c.req.valid("json");
+  const allowed = c.get("allowedInboxes")!;
+  assertInboxAllowed(allowed, fromAddress);
   const now = Math.floor(Date.now() / 1000);
 
   const sender = createEmailSender(c.env);
@@ -138,6 +141,8 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
   const { emailId } = c.req.valid("param");
   const { bodyHtml, bodyText, fromAddress, templateSlug, variables } =
     c.req.valid("json");
+  const allowed = c.get("allowedInboxes")!;
+  assertInboxAllowed(allowed, fromAddress);
   const now = Math.floor(Date.now() / 1000);
 
   // Get the original email

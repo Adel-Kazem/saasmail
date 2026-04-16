@@ -260,3 +260,25 @@ describe("people scoping", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("send scoping", () => {
+  it("member cannot send from a disallowed inbox", async () => {
+    const { apiKey, userId } = await createTestUser({
+      id: "u-mem",
+      role: "member",
+      email: "m@x.com",
+    });
+    await grantInbox(userId, "a@x.com");
+    const res = await authFetch("/api/send", {
+      apiKey,
+      method: "POST",
+      body: JSON.stringify({
+        to: "target@external.com",
+        fromAddress: "b@x.com",
+        subject: "hi",
+        bodyHtml: "<p>hi</p>",
+      }),
+    });
+    expect(res.status).toBe(403);
+  });
+});
