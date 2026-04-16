@@ -310,3 +310,73 @@ describe("sequences scoping", () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe("templates scoping", () => {
+  it("member sees global (from_address IS NULL) and their own inbox templates", async () => {
+    const { apiKey, userId } = await createTestUser({
+      id: "u-mem",
+      role: "member",
+      email: "m@x.com",
+    });
+    await grantInbox(userId, "a@x.com");
+    const db = getDb();
+    const now = Math.floor(Date.now() / 1000);
+    await db.run(sql`
+      INSERT INTO email_templates (id, slug, name, subject, body_html, from_address, created_at, updated_at)
+      VALUES
+        ('t-g', 'global', 'Global', 'Hi', '<p/>', NULL, ${now}, ${now}),
+        ('t-a', 'a-only', 'A', 'Hi', '<p/>', 'a@x.com', ${now}, ${now}),
+        ('t-b', 'b-only', 'B', 'Hi', '<p/>', 'b@x.com', ${now}, ${now})
+    `);
+    const res = await authFetch("/api/email-templates", { apiKey });
+    const body = (await res.json()) as Array<{ slug: string }>;
+    const slugs = body.map((t) => t.slug).sort();
+    expect(slugs).toEqual(["a-only", "global"]);
+  });
+
+  it("member cannot create template with disallowed from_address", async () => {
+    const { apiKey, userId } = await createTestUser({
+      id: "u-mem",
+      role: "member",
+      email: "m@x.com",
+    });
+    await grantInbox(userId, "a@x.com");
+    const res = await authFetch("/api/email-templates", {
+      apiKey,
+      method: "POST",
+      body: JSON.stringify({
+        slug: "new-one",
+        name: "X",
+        subject: "X",
+        bodyHtml: "<p/>",
+        fromAddress: "b@x.com",
+      }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("member cannot send template through disallowed from_address", async () => {
+    const { apiKey, userId } = await createTestUser({
+      id: "u-mem",
+      role: "member",
+      email: "m@x.com",
+    });
+    await grantInbox(userId, "a@x.com");
+    const db = getDb();
+    const now = Math.floor(Date.now() / 1000);
+    await db.run(sql`
+      INSERT INTO email_templates (id, slug, name, subject, body_html, from_address, created_at, updated_at)
+      VALUES ('t-g', 'global', 'G', 'Hi', '<p/>', NULL, ${now}, ${now})
+    `);
+    const res = await authFetch("/api/email-templates/global/send", {
+      apiKey,
+      method: "POST",
+      body: JSON.stringify({
+        to: "target@external.com",
+        fromAddress: "b@x.com",
+        variables: {},
+      }),
+    });
+    expect(res.status).toBe(403);
+  });
+});

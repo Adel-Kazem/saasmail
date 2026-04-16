@@ -1,7 +1,8 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { createEmailSender } from "../lib/email-sender";
+import { assertInboxAllowed } from "../lib/inbox-permissions";
 import { emailTemplates } from "../db/email-templates.schema";
 import { sentEmails } from "../db/sent-emails.schema";
 import { people } from "../db/people.schema";
@@ -20,6 +21,7 @@ const EmailTemplateSchema = z.object({
   name: z.string(),
   subject: z.string(),
   bodyHtml: z.string(),
+  fromAddress: z.string().nullable(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
@@ -38,6 +40,7 @@ const createTemplateRoute = createRoute({
             name: z.string(),
             subject: z.string(),
             bodyHtml: z.string(),
+            fromAddress: z.string().email().nullable().optional(),
           }),
         },
       },
@@ -50,7 +53,16 @@ const createTemplateRoute = createRoute({
 
 emailTemplatesRouter.openapi(createTemplateRoute, async (c) => {
   const db = c.get("db");
-  const { slug, name, subject, bodyHtml } = c.req.valid("json");
+  const { slug, name, subject, bodyHtml, fromAddress } = c.req.valid("json");
+
+  const allowed = c.get("allowedInboxes")!;
+  if (fromAddress != null) {
+    assertInboxAllowed(allowed, fromAddress);
+  } else if (!allowed.isAdmin) {
+    // Members cannot create global (null) templates.
+    return c.json({ error: "from_address is required for members" }, 403);
+  }
+
   const now = Math.floor(Date.now() / 1000);
   const template = {
     id: nanoid(),
@@ -58,6 +70,7 @@ emailTemplatesRouter.openapi(createTemplateRoute, async (c) => {
     name,
     subject,
     bodyHtml,
+    fromAddress: fromAddress ?? null,
     createdAt: now,
     updatedAt: now,
   };
@@ -77,7 +90,26 @@ const listTemplatesRoute = createRoute({
 
 emailTemplatesRouter.openapi(listTemplatesRoute, async (c) => {
   const db = c.get("db");
-  const rows = await db.select().from(emailTemplates);
+  const allowed = c.get("allowedInboxes")!;
+  let rows;
+  if (allowed.isAdmin) {
+    rows = await db.select().from(emailTemplates);
+  } else if (allowed.inboxes.length === 0) {
+    rows = await db
+      .select()
+      .from(emailTemplates)
+      .where(isNull(emailTemplates.fromAddress));
+  } else {
+    rows = await db
+      .select()
+      .from(emailTemplates)
+      .where(
+        or(
+          isNull(emailTemplates.fromAddress),
+          inArray(emailTemplates.fromAddress, allowed.inboxes),
+        ),
+      );
+  }
   return c.json(rows, 200);
 });
 
@@ -107,6 +139,12 @@ emailTemplatesRouter.openapi(getTemplateRoute, async (c) => {
   if (rows.length === 0) {
     return c.json({ error: "Template not found" }, 404);
   }
+  const allowed = c.get("allowedInboxes")!;
+  if (!allowed.isAdmin && rows[0].fromAddress !== null) {
+    if (!allowed.inboxes.includes(rows[0].fromAddress)) {
+      return c.json({ error: "Template not found" }, 404);
+    }
+  }
   return c.json(rows[0], 200);
 });
 
@@ -126,6 +164,7 @@ const updateTemplateRoute = createRoute({
             name: z.string().optional(),
             subject: z.string().optional(),
             bodyHtml: z.string().optional(),
+            fromAddress: z.string().email().nullable().optional(),
           }),
         },
       },
@@ -149,6 +188,11 @@ emailTemplatesRouter.openapi(updateTemplateRoute, async (c) => {
     .limit(1);
   if (existing.length === 0) {
     return c.json({ error: "Template not found" }, 404);
+  }
+
+  const allowed = c.get("allowedInboxes")!;
+  if (updates.fromAddress !== undefined && updates.fromAddress !== null) {
+    assertInboxAllowed(allowed, updates.fromAddress);
   }
 
   await db
@@ -283,6 +327,9 @@ emailTemplatesRouter.openapi(sendTemplateRoute, async (c) => {
   const db = c.get("db");
   const { slug } = c.req.valid("param");
   const { to, fromAddress, variables } = c.req.valid("json");
+
+  const allowed = c.get("allowedInboxes")!;
+  assertInboxAllowed(allowed, fromAddress);
 
   // Look up template
   const rows = await db
