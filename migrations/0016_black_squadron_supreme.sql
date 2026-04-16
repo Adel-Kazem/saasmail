@@ -1,0 +1,1 @@
+ALTER TABLE `email_templates` ADD `from_address` text;
