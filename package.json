@@ -16,7 +16,8 @@
     "test": "vitest run --config vitest.config.test.ts",
     "test:watch": "vitest --config vitest.config.test.ts",
     "prepare": "husky",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,md,html}": "prettier --write"
