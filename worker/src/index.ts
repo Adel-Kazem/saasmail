@@ -17,6 +17,7 @@ import { statsRouter } from "./routers/stats-router";
 import { setupRouter } from "./routers/setup-router";
 import { emailTemplatesRouter } from "./routers/email-templates-router";
 import { adminRouter } from "./routers/admin-router";
+import { adminInboxesRouter } from "./routers/admin-inboxes-router";
 import { invitesRouter } from "./routers/invites-router";
 import { userRouter } from "./routers/user-router";
 import { apiKeysRouter } from "./routers/api-keys-router";
@@ -139,6 +140,7 @@ app.route("/api/sender-identities", senderIdentitiesRouter);
 // Admin routes (require admin role)
 app.use("/api/admin/*", requireAdmin);
 app.route("/api/admin", adminRouter);
+app.route("/api/admin/inboxes", adminInboxesRouter);
 
 // Health check (no auth)
 app.get("/api/health", (c) => c.json({ status: "ok" }));
