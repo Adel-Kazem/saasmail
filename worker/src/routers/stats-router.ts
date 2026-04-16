@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { sql } from "drizzle-orm";
 import { people } from "../db/people.schema";
 import { emails } from "../db/emails.schema";
+import { senderIdentities } from "../db/sender-identities.schema";
 import { json200Response } from "../lib/helpers";
 import type { Variables } from "../variables";
 
@@ -15,6 +16,12 @@ const StatsSchema = z.object({
   totalEmails: z.number(),
   unreadCount: z.number(),
   recipients: z.array(z.string()),
+  senderIdentities: z.array(
+    z.object({
+      email: z.string(),
+      displayName: z.string(),
+    }),
+  ),
 });
 
 const statsRoute = createRoute({
@@ -72,12 +79,18 @@ statsRouter.openapi(statsRoute, async (c) => {
     .from(emails)
     .groupBy(emails.recipient);
 
+  const identityRows = await db.select().from(senderIdentities);
+
   return c.json(
     {
       totalPeople: personCount[0]?.count ?? 0,
       totalEmails,
       unreadCount,
       recipients: recipientRows.map((r) => r.recipient),
+      senderIdentities: identityRows.map((r) => ({
+        email: r.email,
+        displayName: r.displayName,
+      })),
     },
     200,
   );
