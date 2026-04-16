@@ -36,16 +36,21 @@ const CreateSequenceSchema = z.object({
   steps: z.array(SequenceStepSchema).min(1),
 });
 
-const EnrollSchema = z.object({
-  senderId: z.string(),
-  fromAddress: z.string().email(),
-  variables: z.record(z.string(), z.string()).optional().default({}),
-  skipSteps: z.array(z.number().int()).optional().default([]),
-  delayOverrides: z
-    .record(z.string(), z.number().int().min(0))
-    .optional()
-    .default({}),
-});
+const EnrollSchema = z
+  .object({
+    senderId: z.string().optional(),
+    senderEmail: z.string().email().optional(),
+    fromAddress: z.string().email(),
+    variables: z.record(z.string(), z.string()).optional().default({}),
+    skipSteps: z.array(z.number().int()).optional().default([]),
+    delayOverrides: z
+      .record(z.string(), z.number().int().min(0))
+      .optional()
+      .default({}),
+  })
+  .refine((data) => data.senderId || data.senderEmail, {
+    message: "Either senderId or senderEmail must be provided",
+  });
 
 const EnrollmentSchema = z.object({
   id: z.string(),
@@ -321,8 +326,14 @@ const enrollRoute = createRoute({
 sequencesRouter.openapi(enrollRoute, async (c) => {
   const db = c.get("db");
   const { id } = c.req.valid("param");
-  const { senderId, fromAddress, variables, skipSteps, delayOverrides } =
-    c.req.valid("json");
+  const {
+    senderId: inputSenderId,
+    senderEmail,
+    fromAddress,
+    variables,
+    skipSteps,
+    delayOverrides,
+  } = c.req.valid("json");
   const now = Math.floor(Date.now() / 1000);
 
   // Validate sequence exists
@@ -336,15 +347,41 @@ sequencesRouter.openapi(enrollRoute, async (c) => {
     return c.json({ error: "Sequence not found" }, 404);
   }
 
-  // Validate sender exists
-  const senderRows = await db
-    .select({ id: senders.id })
-    .from(senders)
-    .where(eq(senders.id, senderId))
-    .limit(1);
+  // Resolve sender: by ID, or by email (create if needed)
+  let senderId: string;
+  if (inputSenderId) {
+    const senderRows = await db
+      .select({ id: senders.id })
+      .from(senders)
+      .where(eq(senders.id, inputSenderId))
+      .limit(1);
+    if (senderRows.length === 0) {
+      return c.json({ error: "Sender not found" }, 404);
+    }
+    senderId = inputSenderId;
+  } else {
+    // senderEmail is guaranteed by the schema refinement
+    const existing = await db
+      .select({ id: senders.id })
+      .from(senders)
+      .where(eq(senders.email, senderEmail!))
+      .limit(1);
 
-  if (senderRows.length === 0) {
-    return c.json({ error: "Sender not found" }, 404);
+    if (existing.length > 0) {
+      senderId = existing[0].id;
+    } else {
+      senderId = nanoid();
+      await db.insert(senders).values({
+        id: senderId,
+        email: senderEmail!,
+        name: null,
+        lastEmailAt: now,
+        unreadCount: 0,
+        totalCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
   }
 
   // Check sender is not already in an active sequence

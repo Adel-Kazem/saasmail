@@ -156,7 +156,7 @@ describe("sequences router", () => {
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1" }),
+        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
       });
 
       const res = await authFetch(`/api/sequences/${seq.id}`, {
@@ -177,6 +177,7 @@ describe("sequences router", () => {
         method: "POST",
         body: JSON.stringify({
           senderId: "s1",
+          fromAddress: "me@cmail.test",
           variables: { customVar: "value" },
         }),
       });
@@ -184,7 +185,7 @@ describe("sequences router", () => {
       const data = await res.json();
       expect(data.enrollment.status).toBe("active");
       expect(data.scheduledEmails).toHaveLength(2);
-      expect(data.scheduledEmails[0].status).toBe("pending");
+      expect(data.scheduledEmails[0].status).toBe("queued");
     });
 
     it("rejects enrollment for nonexistent sender", async () => {
@@ -192,7 +193,7 @@ describe("sequences router", () => {
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "nonexistent" }),
+        body: JSON.stringify({ senderId: "nonexistent", fromAddress: "me@cmail.test" }),
       });
       expect(res.status).toBe(404);
     });
@@ -204,13 +205,13 @@ describe("sequences router", () => {
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1" }),
+        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
       });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1" }),
+        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
       });
       expect(res.status).toBe(400);
     });
@@ -222,7 +223,7 @@ describe("sequences router", () => {
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", skipSteps: [2] }),
+        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test", skipSteps: [2] }),
       });
       expect(res.status).toBe(201);
       const data = await res.json();
@@ -237,7 +238,61 @@ describe("sequences router", () => {
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", skipSteps: [1, 2] }),
+        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test", skipSteps: [1, 2] }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("enrolls by senderEmail with existing sender", async () => {
+      const seq = await createSequenceWithTemplates();
+      await createTestSender({ id: "s1", email: "a@test.com" });
+
+      const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
+        apiKey,
+        method: "POST",
+        body: JSON.stringify({
+          senderEmail: "a@test.com",
+          fromAddress: "me@cmail.test",
+        }),
+      });
+      expect(res.status).toBe(201);
+      const data = await res.json();
+      expect(data.enrollment.senderId).toBe("s1");
+    });
+
+    it("enrolls by senderEmail and creates sender if not found", async () => {
+      const seq = await createSequenceWithTemplates();
+
+      const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
+        apiKey,
+        method: "POST",
+        body: JSON.stringify({
+          senderEmail: "new-person@test.com",
+          fromAddress: "me@cmail.test",
+        }),
+      });
+      expect(res.status).toBe(201);
+      const data = await res.json();
+      expect(data.enrollment.senderId).toBeTruthy();
+
+      // Verify sender was created in DB
+      const db = getDb();
+      const { senders } = await import("../db/senders.schema");
+      const { eq } = await import("drizzle-orm");
+      const rows = await db
+        .select()
+        .from(senders)
+        .where(eq(senders.email, "new-person@test.com"));
+      expect(rows).toHaveLength(1);
+      expect(rows[0].id).toBe(data.enrollment.senderId);
+    });
+
+    it("rejects when neither senderId nor senderEmail provided", async () => {
+      const seq = await createSequenceWithTemplates();
+      const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
+        apiKey,
+        method: "POST",
+        body: JSON.stringify({ fromAddress: "me@cmail.test" }),
       });
       expect(res.status).toBe(400);
     });
@@ -251,16 +306,20 @@ describe("sequences router", () => {
         method: "POST",
         body: JSON.stringify({
           senderId: "s1",
+          fromAddress: "me@cmail.test",
           delayOverrides: { "2": 48 },
         }),
       });
       expect(res.status).toBe(201);
       const data = await res.json();
-      // Step 2 should have 48 hours delay from base instead of 24
+      // Step 2 should have ~48 hours delay from step 1
+      // Step 1 is scheduled at `now`, step 2 at `snapToNextHour(now) + 48*3600`
+      // so the diff can be up to 3600s more than 48h depending on snap
       const step2 = data.scheduledEmails.find((e: any) => e.stepOrder === 2);
       const step1 = data.scheduledEmails.find((e: any) => e.stepOrder === 1);
       const diff = step2.scheduledAt - step1.scheduledAt;
-      expect(diff).toBe(48 * 3600);
+      expect(diff).toBeGreaterThanOrEqual(48 * 3600);
+      expect(diff).toBeLessThanOrEqual(48 * 3600 + 3600);
     });
   });
 
@@ -283,7 +342,7 @@ describe("sequences router", () => {
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1" }),
+        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
       });
 
       const res = await authFetch("/api/sequences/senders/s1/enrollment", {
@@ -305,7 +364,7 @@ describe("sequences router", () => {
       const enrollRes = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1" }),
+        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
       });
       const enrollData = await enrollRes.json();
 
@@ -341,7 +400,7 @@ describe("sequences router", () => {
       const enrollRes = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1" }),
+        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
       });
       const enrollData = await enrollRes.json();
 
@@ -368,7 +427,7 @@ describe("sequences router", () => {
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1" }),
+        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
       });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enrollments`, {
