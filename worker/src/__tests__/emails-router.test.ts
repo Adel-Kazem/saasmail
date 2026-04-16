@@ -3,13 +3,13 @@ import {
   applyMigrations,
   cleanDb,
   createTestUser,
-  createTestSender,
+  createTestPerson,
   createTestEmail,
   authFetch,
   getDb,
 } from "./helpers";
 import { sentEmails } from "../db/sent-emails.schema";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { emails } from "../db/emails.schema";
 import { eq } from "drizzle-orm";
 
@@ -25,16 +25,16 @@ describe("emails router", () => {
     ({ apiKey } = await createTestUser());
   });
 
-  describe("GET /api/emails/by-sender/:senderId", () => {
+  describe("GET /api/emails/by-person/:personId", () => {
     it("returns received and sent emails interleaved", async () => {
       const db = getDb();
-      await createTestSender({ id: "s1", email: "a@test.com" });
-      await createTestEmail({ id: "e1", senderId: "s1" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
+      await createTestEmail({ id: "e1", personId: "s1" });
 
       const now = Math.floor(Date.now() / 1000);
       await db.insert(sentEmails).values({
         id: "se1",
-        senderId: "s1",
+        personId: "s1",
         fromAddress: "me@cmail.test",
         toAddress: "a@test.com",
         subject: "Reply",
@@ -46,7 +46,7 @@ describe("emails router", () => {
         createdAt: now + 10,
       });
 
-      const res = await authFetch("/api/emails/by-sender/s1", {
+      const res = await authFetch("/api/emails/by-person/s1", {
         apiKey,
       });
       expect(res.status).toBe(200);
@@ -59,17 +59,17 @@ describe("emails router", () => {
 
     it("includes sent replies when filtering by recipient", async () => {
       const db = getDb();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
       await createTestEmail({
         id: "e1",
-        senderId: "s1",
+        personId: "s1",
         recipient: "inbox@cmail.test",
       });
 
       const now = Math.floor(Date.now() / 1000);
       await db.insert(sentEmails).values({
         id: "se1",
-        senderId: "s1",
+        personId: "s1",
         fromAddress: "inbox@cmail.test",
         toAddress: "a@test.com",
         subject: "Re: Test Subject",
@@ -83,7 +83,7 @@ describe("emails router", () => {
 
       // Filter by recipient (inbox address) — sent replies should still appear
       const res = await authFetch(
-        "/api/emails/by-sender/s1?recipient=inbox@cmail.test",
+        "/api/emails/by-person/s1?recipient=inbox@cmail.test",
         { apiKey },
       );
       expect(res.status).toBe(200);
@@ -94,17 +94,17 @@ describe("emails router", () => {
     });
 
     it("paginates results", async () => {
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
       for (let i = 0; i < 5; i++) {
         await createTestEmail({
           id: `e${i}`,
-          senderId: "s1",
+          personId: "s1",
           messageId: `msg-${i}@test.com`,
           subject: `Subject ${i}`,
         });
       }
 
-      const res = await authFetch("/api/emails/by-sender/s1?limit=2&page=1", {
+      const res = await authFetch("/api/emails/by-person/s1?limit=2&page=1", {
         apiKey,
       });
       const data = await res.json();
@@ -112,20 +112,20 @@ describe("emails router", () => {
     });
 
     it("searches by subject", async () => {
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
       await createTestEmail({
         id: "e1",
-        senderId: "s1",
+        personId: "s1",
         subject: "Important Meeting",
       });
       await createTestEmail({
         id: "e2",
-        senderId: "s1",
+        personId: "s1",
         subject: "Lunch",
         messageId: "msg-2@test.com",
       });
 
-      const res = await authFetch("/api/emails/by-sender/s1?q=Important", {
+      const res = await authFetch("/api/emails/by-person/s1?q=Important", {
         apiKey,
       });
       const data = await res.json();
@@ -136,8 +136,8 @@ describe("emails router", () => {
 
   describe("GET /api/emails/:id", () => {
     it("returns email with attachments", async () => {
-      await createTestSender({ id: "s1", email: "a@test.com" });
-      await createTestEmail({ id: "e1", senderId: "s1" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
+      await createTestEmail({ id: "e1", personId: "s1" });
 
       const res = await authFetch("/api/emails/e1", { apiKey });
       expect(res.status).toBe(200);
@@ -155,12 +155,12 @@ describe("emails router", () => {
 
   describe("PATCH /api/emails/:id", () => {
     it("marks email as read and decrements sender unread count", async () => {
-      await createTestSender({
+      await createTestPerson({
         id: "s1",
         email: "a@test.com",
         unreadCount: 1,
       });
-      await createTestEmail({ id: "e1", senderId: "s1", isRead: 0 });
+      await createTestEmail({ id: "e1", personId: "s1", isRead: 0 });
 
       const res = await authFetch("/api/emails/e1", {
         apiKey,
@@ -175,19 +175,19 @@ describe("emails router", () => {
       const db = getDb();
       const senderRow = await db
         .select()
-        .from(senders)
-        .where(eq(senders.id, "s1"))
+        .from(people)
+        .where(eq(people.id, "s1"))
         .limit(1);
       expect(senderRow[0].unreadCount).toBe(0);
     });
 
     it("marks email as unread and increments sender unread count", async () => {
-      await createTestSender({
+      await createTestPerson({
         id: "s1",
         email: "a@test.com",
         unreadCount: 0,
       });
-      await createTestEmail({ id: "e1", senderId: "s1", isRead: 1 });
+      await createTestEmail({ id: "e1", personId: "s1", isRead: 1 });
 
       const res = await authFetch("/api/emails/e1", {
         apiKey,
@@ -199,19 +199,19 @@ describe("emails router", () => {
       const db = getDb();
       const senderRow = await db
         .select()
-        .from(senders)
-        .where(eq(senders.id, "s1"))
+        .from(people)
+        .where(eq(people.id, "s1"))
         .limit(1);
       expect(senderRow[0].unreadCount).toBe(1);
     });
 
     it("does not change unread count when state is same", async () => {
-      await createTestSender({
+      await createTestPerson({
         id: "s1",
         email: "a@test.com",
         unreadCount: 1,
       });
-      await createTestEmail({ id: "e1", senderId: "s1", isRead: 0 });
+      await createTestEmail({ id: "e1", personId: "s1", isRead: 0 });
 
       await authFetch("/api/emails/e1", {
         apiKey,
@@ -222,8 +222,8 @@ describe("emails router", () => {
       const db = getDb();
       const senderRow = await db
         .select()
-        .from(senders)
-        .where(eq(senders.id, "s1"))
+        .from(people)
+        .where(eq(people.id, "s1"))
         .limit(1);
       expect(senderRow[0].unreadCount).toBe(1);
     });

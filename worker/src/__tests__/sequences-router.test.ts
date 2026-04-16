@@ -3,7 +3,7 @@ import {
   applyMigrations,
   cleanDb,
   createTestUser,
-  createTestSender,
+  createTestPerson,
   createTestTemplate,
   authFetch,
   getDb,
@@ -150,13 +150,13 @@ describe("sequences router", () => {
 
     it("rejects deletion with active enrollments", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
-      // Enroll sender
+      // Enroll person
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
       });
 
       const res = await authFetch(`/api/sequences/${seq.id}`, {
@@ -168,15 +168,15 @@ describe("sequences router", () => {
   });
 
   describe("POST /api/sequences/:id/enroll", () => {
-    it("enrolls a sender and creates scheduled emails", async () => {
+    it("enrolls a person and creates scheduled emails", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
         body: JSON.stringify({
-          senderId: "s1",
+          personId: "s1",
           fromAddress: "me@cmail.test",
           variables: { customVar: "value" },
         }),
@@ -188,42 +188,42 @@ describe("sequences router", () => {
       expect(data.scheduledEmails[0].status).toBe("queued");
     });
 
-    it("rejects enrollment for nonexistent sender", async () => {
+    it("rejects enrollment for nonexistent person", async () => {
       const seq = await createSequenceWithTemplates();
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "nonexistent", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({ personId: "nonexistent", fromAddress: "me@cmail.test" }),
       });
       expect(res.status).toBe(404);
     });
 
-    it("rejects duplicate enrollment for same sender", async () => {
+    it("rejects duplicate enrollment for same person", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
       });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
       });
       expect(res.status).toBe(400);
     });
 
     it("supports skipSteps", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test", skipSteps: [2] }),
+        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test", skipSteps: [2] }),
       });
       expect(res.status).toBe(201);
       const data = await res.json();
@@ -233,61 +233,61 @@ describe("sequences router", () => {
 
     it("rejects if all steps skipped", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test", skipSteps: [1, 2] }),
+        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test", skipSteps: [1, 2] }),
       });
       expect(res.status).toBe(400);
     });
 
-    it("enrolls by senderEmail with existing sender", async () => {
+    it("enrolls by personEmail with existing person", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
         body: JSON.stringify({
-          senderEmail: "a@test.com",
+          personEmail: "a@test.com",
           fromAddress: "me@cmail.test",
         }),
       });
       expect(res.status).toBe(201);
       const data = await res.json();
-      expect(data.enrollment.senderId).toBe("s1");
+      expect(data.enrollment.personId).toBe("s1");
     });
 
-    it("enrolls by senderEmail and creates sender if not found", async () => {
+    it("enrolls by personEmail and creates person if not found", async () => {
       const seq = await createSequenceWithTemplates();
 
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
         body: JSON.stringify({
-          senderEmail: "new-person@test.com",
+          personEmail: "new-person@test.com",
           fromAddress: "me@cmail.test",
         }),
       });
       expect(res.status).toBe(201);
       const data = await res.json();
-      expect(data.enrollment.senderId).toBeTruthy();
+      expect(data.enrollment.personId).toBeTruthy();
 
-      // Verify sender was created in DB
+      // Verify person was created in DB
       const db = getDb();
-      const { senders } = await import("../db/senders.schema");
+      const { people } = await import("../db/people.schema");
       const { eq } = await import("drizzle-orm");
       const rows = await db
         .select()
-        .from(senders)
-        .where(eq(senders.email, "new-person@test.com"));
+        .from(people)
+        .where(eq(people.email, "new-person@test.com"));
       expect(rows).toHaveLength(1);
-      expect(rows[0].id).toBe(data.enrollment.senderId);
+      expect(rows[0].id).toBe(data.enrollment.personId);
     });
 
-    it("rejects when neither senderId nor senderEmail provided", async () => {
+    it("rejects when neither personId nor personEmail provided", async () => {
       const seq = await createSequenceWithTemplates();
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
@@ -299,13 +299,13 @@ describe("sequences router", () => {
 
     it("supports delayOverrides", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
         body: JSON.stringify({
-          senderId: "s1",
+          personId: "s1",
           fromAddress: "me@cmail.test",
           delayOverrides: { "2": 48 },
         }),
@@ -323,10 +323,10 @@ describe("sequences router", () => {
     });
   });
 
-  describe("GET /api/sequences/senders/:senderId/enrollment", () => {
+  describe("GET /api/sequences/people/:personId/enrollment", () => {
     it("returns null when no active enrollment", async () => {
-      await createTestSender({ id: "s1", email: "a@test.com" });
-      const res = await authFetch("/api/sequences/senders/s1/enrollment", {
+      await createTestPerson({ id: "s1", email: "a@test.com" });
+      const res = await authFetch("/api/sequences/people/s1/enrollment", {
         apiKey,
       });
       expect(res.status).toBe(200);
@@ -337,15 +337,15 @@ describe("sequences router", () => {
 
     it("returns active enrollment with scheduled emails", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
       });
 
-      const res = await authFetch("/api/sequences/senders/s1/enrollment", {
+      const res = await authFetch("/api/sequences/people/s1/enrollment", {
         apiKey,
       });
       expect(res.status).toBe(200);
@@ -359,12 +359,12 @@ describe("sequences router", () => {
   describe("DELETE /api/sequences/enrollments/:enrollmentId", () => {
     it("cancels an active enrollment", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
       const enrollRes = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
       });
       const enrollData = await enrollRes.json();
 
@@ -395,12 +395,12 @@ describe("sequences router", () => {
 
     it("rejects cancellation of non-active enrollment", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
 
       const enrollRes = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
       });
       const enrollData = await enrollRes.json();
 
@@ -420,14 +420,14 @@ describe("sequences router", () => {
   });
 
   describe("GET /api/sequences/:id/enrollments", () => {
-    it("lists enrollments with sender info and step counts", async () => {
+    it("lists enrollments with person info and step counts", async () => {
       const seq = await createSequenceWithTemplates();
-      await createTestSender({ id: "s1", email: "a@test.com", name: "Alice" });
+      await createTestPerson({ id: "s1", email: "a@test.com", name: "Alice" });
 
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ senderId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
       });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enrollments`, {
@@ -436,8 +436,8 @@ describe("sequences router", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data).toHaveLength(1);
-      expect(data[0].senderEmail).toBe("a@test.com");
-      expect(data[0].senderName).toBe("Alice");
+      expect(data[0].personEmail).toBe("a@test.com");
+      expect(data[0].personName).toBe("Alice");
       expect(data[0].totalSteps).toBe(2);
       expect(data[0].sentSteps).toBe(0);
     });

@@ -1,16 +1,16 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { desc, like, or, eq, sql } from "drizzle-orm";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { emails } from "../db/emails.schema";
 import { json200Response } from "../lib/helpers";
 import type { Variables } from "../variables";
 
-export const sendersRouter = new OpenAPIHono<{
+export const peopleRouter = new OpenAPIHono<{
   Bindings: CloudflareBindings;
   Variables: Variables;
 }>();
 
-const SenderSchema = z.object({
+const PersonSchema = z.object({
   id: z.string(),
   email: z.string(),
   name: z.string().nullable(),
@@ -21,8 +21,8 @@ const SenderSchema = z.object({
   latestSubject: z.string().nullable().optional(),
 });
 
-// Grouped senders (unique senders, aggregated across all recipients)
-const GroupedSenderSchema = z.object({
+// Grouped people (unique people, aggregated across all recipients)
+const GroupedPersonSchema = z.object({
   id: z.string(),
   email: z.string(),
   name: z.string().nullable(),
@@ -32,18 +32,18 @@ const GroupedSenderSchema = z.object({
   recipientCount: z.number(),
 });
 
-const listGroupedSendersRoute = createRoute({
+const listGroupedPeopleRoute = createRoute({
   method: "get",
   path: "/grouped",
-  tags: ["Senders"],
+  tags: ["People"],
   description:
-    "List senders grouped by sender (aggregated across all recipients).",
+    "List people grouped by person (aggregated across all recipients).",
   request: {
     query: z.object({
       q: z
         .string()
         .optional()
-        .openapi({ description: "Search sender name/email" }),
+        .openapi({ description: "Search person name/email" }),
       page: z.coerce.number().optional().default(1),
       limit: z.coerce.number().optional().default(50),
     }),
@@ -51,17 +51,17 @@ const listGroupedSendersRoute = createRoute({
   responses: {
     ...json200Response(
       z.object({
-        data: z.array(GroupedSenderSchema),
+        data: z.array(GroupedPersonSchema),
         total: z.number(),
         page: z.number(),
         limit: z.number(),
       }),
-      "Paginated list of grouped senders",
+      "Paginated list of grouped people",
     ),
   },
 });
 
-sendersRouter.openapi(listGroupedSendersRoute, async (c) => {
+peopleRouter.openapi(listGroupedPeopleRoute, async (c) => {
   const db = c.get("db");
   const { q, page, limit } = c.req.valid("query");
   const offset = (page - 1) * limit;
@@ -70,7 +70,7 @@ sendersRouter.openapi(listGroupedSendersRoute, async (c) => {
   if (q) {
     const pattern = `%${q}%`;
     conditions.push(
-      sql`(${senders.email} LIKE ${pattern} OR ${senders.name} LIKE ${pattern})`,
+      sql`(s.email LIKE ${pattern} OR s.name LIKE ${pattern})`,
     );
   }
 
@@ -97,7 +97,7 @@ sendersRouter.openapi(listGroupedSendersRoute, async (c) => {
       COUNT(*) AS totalCount,
       COUNT(DISTINCT e.recipient) AS recipientCount
     FROM ${emails} e
-    JOIN ${senders} s ON s.id = e.sender_id
+    JOIN ${people} s ON s.id = e.person_id
     ${whereClause}
     GROUP BY s.id
     ORDER BY lastEmailAt DESC
@@ -107,7 +107,7 @@ sendersRouter.openapi(listGroupedSendersRoute, async (c) => {
   const countResult = await db.all<{ count: number }>(sql`
     SELECT COUNT(*) AS count FROM (
       SELECT 1 FROM ${emails} e
-      JOIN ${senders} s ON s.id = e.sender_id
+      JOIN ${people} s ON s.id = e.person_id
       ${whereClause}
       GROUP BY s.id
     )
@@ -117,25 +117,25 @@ sendersRouter.openapi(listGroupedSendersRoute, async (c) => {
   return c.json({ data: rows, total, page, limit }, 200);
 });
 
-const listSendersRoute = createRoute({
+const listPeopleRoute = createRoute({
   method: "get",
   path: "/",
-  tags: ["Senders"],
-  description: "List senders sorted by most recent email.",
+  tags: ["People"],
+  description: "List people sorted by most recent email.",
   request: {
     query: z.object({
       q: z
         .string()
         .optional()
-        .openapi({ description: "Search sender name/email" }),
+        .openapi({ description: "Search person name/email" }),
       recipient: z
         .string()
         .optional()
         .openapi({ description: "Filter by recipient address" }),
-      senderId: z
+      personId: z
         .string()
         .optional()
-        .openapi({ description: "Filter by sender ID" }),
+        .openapi({ description: "Filter by person ID" }),
       page: z.coerce.number().optional().default(1),
       limit: z.coerce.number().optional().default(50),
     }),
@@ -143,19 +143,19 @@ const listSendersRoute = createRoute({
   responses: {
     ...json200Response(
       z.object({
-        data: z.array(SenderSchema),
+        data: z.array(PersonSchema),
         total: z.number(),
         page: z.number(),
         limit: z.number(),
       }),
-      "Paginated list of senders",
+      "Paginated list of people",
     ),
   },
 });
 
-sendersRouter.openapi(listSendersRoute, async (c) => {
+peopleRouter.openapi(listPeopleRoute, async (c) => {
   const db = c.get("db");
-  const { q, recipient, senderId, page, limit } = c.req.valid("query");
+  const { q, recipient, personId, page, limit } = c.req.valid("query");
   const offset = (page - 1) * limit;
 
   // Build WHERE conditions for the emails table
@@ -164,16 +164,16 @@ sendersRouter.openapi(listSendersRoute, async (c) => {
   if (q) {
     const pattern = `%${q}%`;
     conditions.push(
-      sql`(${senders.email} LIKE ${pattern} OR ${senders.name} LIKE ${pattern})`,
+      sql`(s.email LIKE ${pattern} OR s.name LIKE ${pattern})`,
     );
   }
 
   if (recipient) {
-    conditions.push(sql`${emails.recipient} = ${recipient}`);
+    conditions.push(sql`e.recipient = ${recipient}`);
   }
 
-  if (senderId) {
-    conditions.push(sql`s.id = ${senderId}`);
+  if (personId) {
+    conditions.push(sql`s.id = ${personId}`);
   }
 
   const whereClause =
@@ -181,7 +181,7 @@ sendersRouter.openapi(listSendersRoute, async (c) => {
       ? sql`WHERE ${sql.join(conditions, sql` AND `)}`
       : sql``;
 
-  // Group by (sender, recipient) to get per-thread stats
+  // Group by (person, recipient) to get per-thread stats
   const rows = await db.all<{
     id: string;
     email: string;
@@ -202,22 +202,22 @@ sendersRouter.openapi(listSendersRoute, async (c) => {
       COUNT(*) AS totalCount,
       (
         SELECT e2.subject FROM emails e2
-        WHERE e2.sender_id = s.id AND e2.recipient = e.recipient
+        WHERE e2.person_id = s.id AND e2.recipient = e.recipient
         ORDER BY e2.received_at DESC LIMIT 1
       ) AS latestSubject
     FROM ${emails} e
-    JOIN ${senders} s ON s.id = e.sender_id
+    JOIN ${people} s ON s.id = e.person_id
     ${whereClause}
     GROUP BY s.id, e.recipient
     ORDER BY lastEmailAt DESC
     LIMIT ${limit} OFFSET ${offset}
   `);
 
-  // Get total count of (sender, recipient) pairs
+  // Get total count of (person, recipient) pairs
   const countResult = await db.all<{ count: number }>(sql`
     SELECT COUNT(*) AS count FROM (
       SELECT 1 FROM ${emails} e
-      JOIN ${senders} s ON s.id = e.sender_id
+      JOIN ${people} s ON s.id = e.person_id
       ${whereClause}
       GROUP BY s.id, e.recipient
     )
@@ -227,33 +227,33 @@ sendersRouter.openapi(listSendersRoute, async (c) => {
   return c.json({ data: rows, total, page, limit }, 200);
 });
 
-const getSenderRoute = createRoute({
+const getPersonRoute = createRoute({
   method: "get",
   path: "/{id}",
-  tags: ["Senders"],
-  description: "Get sender detail.",
+  tags: ["People"],
+  description: "Get person detail.",
   request: {
     params: z.object({
       id: z.string(),
     }),
   },
   responses: {
-    ...json200Response(SenderSchema, "Sender detail"),
+    ...json200Response(PersonSchema, "Person detail"),
   },
 });
 
-sendersRouter.openapi(getSenderRoute, async (c) => {
+peopleRouter.openapi(getPersonRoute, async (c) => {
   const db = c.get("db");
   const { id } = c.req.valid("param");
 
   const rows = await db
     .select()
-    .from(senders)
-    .where(eq(senders.id, id))
+    .from(people)
+    .where(eq(people.id, id))
     .limit(1);
 
   if (rows.length === 0) {
-    return c.json({ error: "Sender not found" }, 404);
+    return c.json({ error: "Person not found" }, 404);
   }
 
   return c.json(rows[0], 200);

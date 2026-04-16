@@ -4,22 +4,22 @@ import { sequenceEnrollments } from "../db/sequence-enrollments.schema";
 import { sequenceEmails } from "../db/sequence-emails.schema";
 
 /**
- * Cancel all active sequence enrollments for a given sender.
+ * Cancel all active sequence enrollments for a given person.
  * Called when any email exchange occurs (inbound or outbound).
  */
-export async function cancelSequencesForSender(
+export async function cancelSequencesForPerson(
   db: DrizzleD1Database<any>,
-  senderId: string,
+  personId: string,
 ): Promise<void> {
   const now = Math.floor(Date.now() / 1000);
 
-  // Find active enrollments for this sender
+  // Find active enrollments for this person
   const activeEnrollments = await db
     .select({ id: sequenceEnrollments.id })
     .from(sequenceEnrollments)
     .where(
       and(
-        eq(sequenceEnrollments.senderId, senderId),
+        eq(sequenceEnrollments.personId, personId),
         eq(sequenceEnrollments.status, "active"),
       ),
     );

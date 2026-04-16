@@ -3,7 +3,7 @@ import { eq, desc, like, and, sql } from "drizzle-orm";
 import { emails } from "../db/emails.schema";
 import { sentEmails } from "../db/sent-emails.schema";
 import { attachments } from "../db/attachments.schema";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { json200Response } from "../lib/helpers";
 import { deleteEmailWithAttachments } from "../lib/delete-email";
 import type { Variables } from "../variables";
@@ -16,7 +16,7 @@ export const emailsRouter = new OpenAPIHono<{
 const EmailSchema = z.object({
   id: z.string(),
   type: z.enum(["received", "sent"]),
-  senderId: z.string().nullable(),
+  personId: z.string().nullable(),
   recipient: z.string().nullable(),
   fromAddress: z.string().nullable(),
   toAddress: z.string().nullable(),
@@ -28,15 +28,15 @@ const EmailSchema = z.object({
   attachmentCount: z.number().optional(),
 });
 
-// List emails for a sender (received + sent interleaved)
-const listSenderEmailsRoute = createRoute({
+// List emails for a person (received + sent interleaved)
+const listPersonEmailsRoute = createRoute({
   method: "get",
-  path: "/by-sender/{senderId}",
+  path: "/by-person/{personId}",
   tags: ["Emails"],
   description:
-    "List all emails for a sender (received and sent, interleaved chronologically).",
+    "List all emails for a person (received and sent, interleaved chronologically).",
   request: {
-    params: z.object({ senderId: z.string() }),
+    params: z.object({ personId: z.string() }),
     query: z.object({
       q: z.string().optional().openapi({ description: "Search by subject" }),
       recipient: z
@@ -48,18 +48,18 @@ const listSenderEmailsRoute = createRoute({
     }),
   },
   responses: {
-    ...json200Response(z.array(EmailSchema), "Emails for sender"),
+    ...json200Response(z.array(EmailSchema), "Emails for person"),
   },
 });
 
-emailsRouter.openapi(listSenderEmailsRoute, async (c) => {
+emailsRouter.openapi(listPersonEmailsRoute, async (c) => {
   const db = c.get("db");
-  const { senderId } = c.req.valid("param");
+  const { personId } = c.req.valid("param");
   const { q, recipient, page, limit } = c.req.valid("query");
   const offset = (page - 1) * limit;
 
   // Build conditions for received emails
-  const receivedConditions: any[] = [eq(emails.senderId, senderId)];
+  const receivedConditions: any[] = [eq(emails.personId, personId)];
   if (q) {
     receivedConditions.push(like(emails.subject, `%${q}%`));
   }
@@ -82,7 +82,7 @@ emailsRouter.openapi(listSenderEmailsRoute, async (c) => {
     .orderBy(desc(emails.receivedAt));
 
   // Build conditions for sent emails
-  const sentConditions: any[] = [eq(sentEmails.senderId, senderId)];
+  const sentConditions: any[] = [eq(sentEmails.personId, personId)];
   if (q) {
     sentConditions.push(like(sentEmails.subject, `%${q}%`));
   }
@@ -109,7 +109,7 @@ emailsRouter.openapi(listSenderEmailsRoute, async (c) => {
     ...received.map((e) => ({
       id: e.id,
       type: "received" as const,
-      senderId,
+      personId,
       recipient: e.recipient,
       fromAddress: null,
       toAddress: null,
@@ -122,7 +122,7 @@ emailsRouter.openapi(listSenderEmailsRoute, async (c) => {
     ...sent.map((e) => ({
       id: e.id,
       type: "sent" as const,
-      senderId,
+      personId,
       recipient: null,
       fromAddress: e.fromAddress,
       toAddress: e.toAddress,
@@ -263,7 +263,7 @@ emailsRouter.openapi(patchEmailRoute, async (c) => {
   const { isRead } = c.req.valid("json");
 
   const email = await db
-    .select({ senderId: emails.senderId, isRead: emails.isRead })
+    .select({ personId: emails.personId, isRead: emails.isRead })
     .from(emails)
     .where(eq(emails.id, id))
     .limit(1);
@@ -281,14 +281,14 @@ emailsRouter.openapi(patchEmailRoute, async (c) => {
       .set({ isRead: nowRead ? 1 : 0 })
       .where(eq(emails.id, id));
 
-    // Update sender unread count
+    // Update person unread count
     const delta = nowRead ? -1 : 1;
     await db
-      .update(senders)
+      .update(people)
       .set({
-        unreadCount: sql`${senders.unreadCount} + ${delta}`,
+        unreadCount: sql`${people.unreadCount} + ${delta}`,
       })
-      .where(eq(senders.id, email[0].senderId));
+      .where(eq(people.id, email[0].personId));
   }
 
   return c.json({ success: true }, 200);
@@ -323,7 +323,7 @@ emailsRouter.openapi(bulkPatchRoute, async (c) => {
 
   for (const id of ids) {
     const email = await db
-      .select({ senderId: emails.senderId, isRead: emails.isRead })
+      .select({ personId: emails.personId, isRead: emails.isRead })
       .from(emails)
       .where(eq(emails.id, id))
       .limit(1);
@@ -339,9 +339,9 @@ emailsRouter.openapi(bulkPatchRoute, async (c) => {
 
       const delta = isRead ? -1 : 1;
       await db
-        .update(senders)
-        .set({ unreadCount: sql`${senders.unreadCount} + ${delta}` })
-        .where(eq(senders.id, email[0].senderId));
+        .update(people)
+        .set({ unreadCount: sql`${people.unreadCount} + ${delta}` })
+        .where(eq(people.id, email[0].personId));
     }
   }
 

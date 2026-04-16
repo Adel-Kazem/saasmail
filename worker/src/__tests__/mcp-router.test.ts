@@ -3,7 +3,7 @@ import {
   applyMigrations,
   cleanDb,
   createTestUser,
-  createTestSender,
+  createTestPerson,
   createTestEmail,
   getDb,
 } from "./helpers";
@@ -173,7 +173,7 @@ describe("MCP router", () => {
       expect(tools.length).toBeGreaterThanOrEqual(8);
 
       const names = tools.map((t: any) => t.name);
-      expect(names).toContain("cmail_list_senders");
+      expect(names).toContain("cmail_list_people");
       expect(names).toContain("cmail_send_email");
       expect(names).toContain("cmail_delete_email");
 
@@ -274,49 +274,49 @@ describe("MCP router", () => {
     });
   });
 
-  // ── tools/call: cmail_list_senders ────────────────────────────────────────
+  // ── tools/call: cmail_list_people ────────────────────────────────────────
 
-  describe("cmail_list_senders", () => {
-    it("returns empty list when no senders exist", async () => {
+  describe("cmail_list_people", () => {
+    it("returns empty list when no people exist", async () => {
       const data = await rpc(
         "tools/call",
-        { name: "cmail_list_senders", arguments: {} },
+        { name: "cmail_list_people", arguments: {} },
         token,
       );
       const content = JSON.parse(data.result.content[0].text);
       expect(content).toEqual([]);
     });
 
-    it("returns senders sorted by newest first", async () => {
+    it("returns people sorted by newest first", async () => {
       const db = getDb();
       const now = Math.floor(Date.now() / 1000);
 
-      await createTestSender({
+      await createTestPerson({
         id: "s-old",
         email: "old@test.com",
         name: "Old",
       });
       // Update lastEmailAt to be older
-      const { senders } = await import("../db/senders.schema");
+      const { people } = await import("../db/people.schema");
       const { eq } = await import("drizzle-orm");
       await db
-        .update(senders)
+        .update(people)
         .set({ lastEmailAt: now - 1000 })
-        .where(eq(senders.id, "s-old"));
+        .where(eq(people.id, "s-old"));
 
-      await createTestSender({
+      await createTestPerson({
         id: "s-new",
         email: "new@test.com",
         name: "New",
       });
       await db
-        .update(senders)
+        .update(people)
         .set({ lastEmailAt: now })
-        .where(eq(senders.id, "s-new"));
+        .where(eq(people.id, "s-new"));
 
       const data = await rpc(
         "tools/call",
-        { name: "cmail_list_senders", arguments: {} },
+        { name: "cmail_list_people", arguments: {} },
         token,
       );
       const content = JSON.parse(data.result.content[0].text);
@@ -325,13 +325,13 @@ describe("MCP router", () => {
       expect(content[1].id).toBe("s-old");
     });
 
-    it("filters senders by search query", async () => {
-      await createTestSender({
+    it("filters people by search query", async () => {
+      await createTestPerson({
         id: "s1",
         email: "alice@test.com",
         name: "Alice",
       });
-      await createTestSender({
+      await createTestPerson({
         id: "s2",
         email: "bob@test.com",
         name: "Bob",
@@ -339,7 +339,7 @@ describe("MCP router", () => {
 
       const data = await rpc(
         "tools/call",
-        { name: "cmail_list_senders", arguments: { q: "alice" } },
+        { name: "cmail_list_people", arguments: { q: "alice" } },
         token,
       );
       const content = JSON.parse(data.result.content[0].text);
@@ -348,12 +348,12 @@ describe("MCP router", () => {
     });
 
     it("escapes LIKE wildcards in search", async () => {
-      await createTestSender({
+      await createTestPerson({
         id: "s1",
         email: "test%special@test.com",
         name: "Special",
       });
-      await createTestSender({
+      await createTestPerson({
         id: "s2",
         email: "normal@test.com",
         name: "Normal",
@@ -363,7 +363,7 @@ describe("MCP router", () => {
       // not act as a wildcard matching everything
       const data = await rpc(
         "tools/call",
-        { name: "cmail_list_senders", arguments: { q: "test%special" } },
+        { name: "cmail_list_people", arguments: { q: "test%special" } },
         token,
       );
       const content = JSON.parse(data.result.content[0].text);
@@ -372,12 +372,12 @@ describe("MCP router", () => {
     });
 
     it("paginates results", async () => {
-      await createTestSender({
+      await createTestPerson({
         id: "s1",
         email: "a@test.com",
         name: "A",
       });
-      await createTestSender({
+      await createTestPerson({
         id: "s2",
         email: "b@test.com",
         name: "B",
@@ -386,7 +386,7 @@ describe("MCP router", () => {
       const data = await rpc(
         "tools/call",
         {
-          name: "cmail_list_senders",
+          name: "cmail_list_people",
           arguments: { page: 1, limit: 1 },
         },
         token,
@@ -396,18 +396,18 @@ describe("MCP router", () => {
     });
   });
 
-  // ── tools/call: cmail_get_sender ──────────────────────────────────────────
+  // ── tools/call: cmail_get_person ──────────────────────────────────────────
 
-  describe("cmail_get_sender", () => {
-    it("returns sender details", async () => {
-      await createTestSender({
+  describe("cmail_get_person", () => {
+    it("returns person details", async () => {
+      await createTestPerson({
         id: "s1",
         email: "alice@test.com",
         name: "Alice",
       });
       const data = await rpc(
         "tools/call",
-        { name: "cmail_get_sender", arguments: { sender_id: "s1" } },
+        { name: "cmail_get_person", arguments: { person_id: "s1" } },
         token,
       );
       const content = JSON.parse(data.result.content[0].text);
@@ -415,20 +415,20 @@ describe("MCP router", () => {
       expect(content.name).toBe("Alice");
     });
 
-    it("returns error for non-existent sender", async () => {
+    it("returns error for non-existent person", async () => {
       const data = await rpc(
         "tools/call",
-        { name: "cmail_get_sender", arguments: { sender_id: "nope" } },
+        { name: "cmail_get_person", arguments: { person_id: "nope" } },
         token,
       );
       expect(data.result.isError).toBe(true);
       expect(data.result.content[0].text).toContain("not found");
     });
 
-    it("returns error when sender_id is missing", async () => {
+    it("returns error when person_id is missing", async () => {
       const data = await rpc(
         "tools/call",
-        { name: "cmail_get_sender", arguments: {} },
+        { name: "cmail_get_person", arguments: {} },
         token,
       );
       expect(data.result.isError).toBe(true);
@@ -442,16 +442,16 @@ describe("MCP router", () => {
       const db = getDb();
       const now = Math.floor(Date.now() / 1000);
 
-      await createTestSender({ id: "s1", email: "alice@test.com" });
+      await createTestPerson({ id: "s1", email: "alice@test.com" });
       await createTestEmail({
         id: "recv-1",
-        senderId: "s1",
+        personId: "s1",
         subject: "Received",
       });
 
       await db.insert(sentEmails).values({
         id: "sent-1",
-        senderId: "s1",
+        personId: "s1",
         fromAddress: "me@cmail.test",
         toAddress: "alice@test.com",
         subject: "Sent",
@@ -463,7 +463,7 @@ describe("MCP router", () => {
 
       const data = await rpc(
         "tools/call",
-        { name: "cmail_list_emails", arguments: { sender_id: "s1" } },
+        { name: "cmail_list_emails", arguments: { person_id: "s1" } },
         token,
       );
       const content = JSON.parse(data.result.content[0].text);
@@ -474,7 +474,7 @@ describe("MCP router", () => {
       expect(types).toContain("sent");
     });
 
-    it("returns error when sender_id is missing", async () => {
+    it("returns error when person_id is missing", async () => {
       const data = await rpc(
         "tools/call",
         { name: "cmail_list_emails", arguments: {} },
@@ -488,10 +488,10 @@ describe("MCP router", () => {
 
   describe("cmail_read_email", () => {
     it("reads a received email", async () => {
-      await createTestSender({ id: "s1", email: "alice@test.com" });
+      await createTestPerson({ id: "s1", email: "alice@test.com" });
       await createTestEmail({
         id: "e1",
-        senderId: "s1",
+        personId: "s1",
         subject: "Hello",
       });
 
@@ -511,7 +511,7 @@ describe("MCP router", () => {
 
       await db.insert(sentEmails).values({
         id: "se1",
-        senderId: null,
+        personId: null,
         fromAddress: "me@cmail.test",
         toAddress: "bob@test.com",
         subject: "Outgoing",
@@ -546,8 +546,8 @@ describe("MCP router", () => {
 
   describe("cmail_mark_email", () => {
     it("marks an email as read", async () => {
-      await createTestSender({ id: "s1", email: "alice@test.com" });
-      await createTestEmail({ id: "e1", senderId: "s1", isRead: 0 });
+      await createTestPerson({ id: "s1", email: "alice@test.com" });
+      await createTestEmail({ id: "e1", personId: "s1", isRead: 0 });
 
       const data = await rpc(
         "tools/call",
@@ -571,8 +571,8 @@ describe("MCP router", () => {
     });
 
     it("marks an email as unread", async () => {
-      await createTestSender({ id: "s1", email: "alice@test.com" });
-      await createTestEmail({ id: "e1", senderId: "s1", isRead: 1 });
+      await createTestPerson({ id: "s1", email: "alice@test.com" });
+      await createTestEmail({ id: "e1", personId: "s1", isRead: 1 });
 
       const data = await rpc(
         "tools/call",
@@ -600,8 +600,8 @@ describe("MCP router", () => {
 
   describe("cmail_delete_email", () => {
     it("deletes a received email", async () => {
-      await createTestSender({ id: "s1", email: "alice@test.com" });
-      await createTestEmail({ id: "e1", senderId: "s1" });
+      await createTestPerson({ id: "s1", email: "alice@test.com" });
+      await createTestEmail({ id: "e1", personId: "s1" });
 
       const data = await rpc(
         "tools/call",
@@ -625,7 +625,7 @@ describe("MCP router", () => {
       const now = Math.floor(Date.now() / 1000);
       await db.insert(sentEmails).values({
         id: "se1",
-        senderId: null,
+        personId: null,
         fromAddress: "me@cmail.test",
         toAddress: "bob@test.com",
         subject: "Delete me",

@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { schema } from "../db/schema";
 import { users } from "../db/auth.schema";
 import { sessions } from "../db/auth.schema";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { emails } from "../db/emails.schema";
 import { sentEmails } from "../db/sent-emails.schema";
 import { attachments } from "../db/attachments.schema";
@@ -49,20 +49,20 @@ export async function applyMigrations() {
     `CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (id TEXT PRIMARY KEY, token TEXT NOT NULL, client_id TEXT NOT NULL REFERENCES oauth_clients(client_id) ON DELETE CASCADE, session_id TEXT REFERENCES sessions(id) ON DELETE SET NULL, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, reference_id TEXT, expires_at INTEGER, created_at INTEGER, revoked INTEGER, auth_time INTEGER, scopes TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS oauth_access_tokens (id TEXT PRIMARY KEY, token TEXT UNIQUE, client_id TEXT NOT NULL REFERENCES oauth_clients(client_id) ON DELETE CASCADE, session_id TEXT REFERENCES sessions(id) ON DELETE SET NULL, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, reference_id TEXT, refresh_id TEXT REFERENCES oauth_refresh_tokens(id) ON DELETE CASCADE, expires_at INTEGER, created_at INTEGER, scopes TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS oauth_consents (id TEXT PRIMARY KEY, client_id TEXT NOT NULL REFERENCES oauth_clients(client_id) ON DELETE CASCADE, user_id TEXT REFERENCES users(id) ON DELETE CASCADE, reference_id TEXT, scopes TEXT NOT NULL, created_at INTEGER, updated_at INTEGER)`,
-    `CREATE TABLE IF NOT EXISTS senders (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, last_email_at INTEGER NOT NULL, unread_count INTEGER NOT NULL DEFAULT 0, total_count INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
-    `CREATE INDEX IF NOT EXISTS senders_last_email_at_idx ON senders(last_email_at)`,
-    `CREATE TABLE IF NOT EXISTS emails (id TEXT PRIMARY KEY, sender_id TEXT NOT NULL, recipient TEXT NOT NULL, subject TEXT, body_html TEXT, body_text TEXT, raw_headers TEXT, message_id TEXT UNIQUE, is_read INTEGER NOT NULL DEFAULT 0, received_at INTEGER NOT NULL, created_at INTEGER NOT NULL)`,
-    `CREATE INDEX IF NOT EXISTS emails_sender_received_idx ON emails(sender_id, received_at)`,
+    `CREATE TABLE IF NOT EXISTS people (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT, last_email_at INTEGER NOT NULL, unread_count INTEGER NOT NULL DEFAULT 0, total_count INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
+    `CREATE INDEX IF NOT EXISTS people_last_email_at_idx ON people(last_email_at)`,
+    `CREATE TABLE IF NOT EXISTS emails (id TEXT PRIMARY KEY, person_id TEXT NOT NULL, recipient TEXT NOT NULL, subject TEXT, body_html TEXT, body_text TEXT, raw_headers TEXT, message_id TEXT UNIQUE, is_read INTEGER NOT NULL DEFAULT 0, received_at INTEGER NOT NULL, created_at INTEGER NOT NULL)`,
+    `CREATE INDEX IF NOT EXISTS emails_person_received_idx ON emails(person_id, received_at)`,
     `CREATE INDEX IF NOT EXISTS emails_recipient_received_idx ON emails(recipient, received_at)`,
-    `CREATE TABLE IF NOT EXISTS sent_emails (id TEXT PRIMARY KEY, sender_id TEXT, from_address TEXT NOT NULL, to_address TEXT NOT NULL, subject TEXT NOT NULL, body_html TEXT, body_text TEXT, in_reply_to TEXT, resend_id TEXT, status TEXT NOT NULL DEFAULT 'sent', sent_at INTEGER NOT NULL, created_at INTEGER NOT NULL)`,
-    `CREATE INDEX IF NOT EXISTS sent_emails_sender_sent_idx ON sent_emails(sender_id, sent_at)`,
+    `CREATE TABLE IF NOT EXISTS sent_emails (id TEXT PRIMARY KEY, person_id TEXT, from_address TEXT NOT NULL, to_address TEXT NOT NULL, subject TEXT NOT NULL, body_html TEXT, body_text TEXT, in_reply_to TEXT, resend_id TEXT, status TEXT NOT NULL DEFAULT 'sent', sent_at INTEGER NOT NULL, created_at INTEGER NOT NULL)`,
+    `CREATE INDEX IF NOT EXISTS sent_emails_person_sent_idx ON sent_emails(person_id, sent_at)`,
     `CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, email_id TEXT NOT NULL, filename TEXT NOT NULL, content_type TEXT NOT NULL, size INTEGER NOT NULL, r2_key TEXT NOT NULL, content_id TEXT, created_at INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS email_templates (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, subject TEXT NOT NULL, body_html TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS api_keys (id TEXT PRIMARY KEY, user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE, key_hash TEXT NOT NULL, key_prefix TEXT NOT NULL, created_at INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS invitations (id TEXT PRIMARY KEY, token TEXT NOT NULL UNIQUE, role TEXT NOT NULL DEFAULT 'member', email TEXT, expires_at INTEGER NOT NULL, used_by TEXT REFERENCES users(id) ON DELETE SET NULL, used_at INTEGER, created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, created_at INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS sequences (id TEXT PRIMARY KEY, name TEXT NOT NULL, steps TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS sequence_enrollments (id TEXT PRIMARY KEY, sequence_id TEXT NOT NULL, sender_id TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active', variables TEXT NOT NULL DEFAULT '{}', from_address TEXT NOT NULL DEFAULT '', enrolled_at INTEGER NOT NULL, cancelled_at INTEGER)`,
-    `CREATE INDEX IF NOT EXISTS enrollments_sender_status_idx ON sequence_enrollments(sender_id, status)`,
+    `CREATE TABLE IF NOT EXISTS sequence_enrollments (id TEXT PRIMARY KEY, sequence_id TEXT NOT NULL, person_id TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active', variables TEXT NOT NULL DEFAULT '{}', from_address TEXT NOT NULL DEFAULT '', enrolled_at INTEGER NOT NULL, cancelled_at INTEGER)`,
+    `CREATE INDEX IF NOT EXISTS enrollments_person_status_idx ON sequence_enrollments(person_id, status)`,
     `CREATE TABLE IF NOT EXISTS sequence_emails (id TEXT PRIMARY KEY, enrollment_id TEXT NOT NULL, step_order INTEGER NOT NULL, template_slug TEXT NOT NULL, scheduled_at INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', sent_at INTEGER, sent_email_id TEXT)`,
     `CREATE INDEX IF NOT EXISTS seq_emails_status_scheduled_idx ON sequence_emails(status, scheduled_at)`,
   ];
@@ -108,8 +108,8 @@ export async function createTestUser(
   return { userId, apiKey: rawKey };
 }
 
-/** Create a test sender. */
-export async function createTestSender(
+/** Create a test person. */
+export async function createTestPerson(
   opts: {
     id?: string;
     email?: string;
@@ -120,7 +120,7 @@ export async function createTestSender(
 ) {
   const db = getDb();
   const now = Math.floor(Date.now() / 1000);
-  const sender = {
+  const person = {
     id: opts.id ?? "sender-1",
     email: opts.email ?? "alice@example.com",
     name: opts.name ?? "Alice",
@@ -130,15 +130,15 @@ export async function createTestSender(
     createdAt: now,
     updatedAt: now,
   };
-  await db.insert(senders).values(sender);
-  return sender;
+  await db.insert(people).values(person);
+  return person;
 }
 
 /** Create a test received email. */
 export async function createTestEmail(
   opts: {
     id?: string;
-    senderId?: string;
+    personId?: string;
     recipient?: string;
     subject?: string;
     messageId?: string;
@@ -149,7 +149,7 @@ export async function createTestEmail(
   const now = Math.floor(Date.now() / 1000);
   const email = {
     id: opts.id ?? "email-1",
-    senderId: opts.senderId ?? "sender-1",
+    personId: opts.personId ?? "sender-1",
     recipient: opts.recipient ?? "inbox@cmail.test",
     subject: opts.subject ?? "Test Subject",
     bodyHtml: "<p>Hello</p>",
@@ -221,7 +221,7 @@ export async function cleanDb() {
     DELETE FROM attachments;
     DELETE FROM sent_emails;
     DELETE FROM emails;
-    DELETE FROM senders;
+    DELETE FROM people;
     DELETE FROM email_templates;
     DELETE FROM api_keys;
     DELETE FROM invitations;

@@ -5,7 +5,7 @@ export const sequenceEnrollments = sqliteTable(
   {
     id: text("id").primaryKey(),
     sequenceId: text("sequence_id").notNull(),
-    senderId: text("sender_id").notNull(),
+    personId: text("person_id").notNull(),
     status: text("status").notNull().default("active"), // active, completed, cancelled
     variables: text("variables").notNull().default("{}"), // JSON
     fromAddress: text("from_address").notNull(),
@@ -13,7 +13,7 @@ export const sequenceEnrollments = sqliteTable(
     cancelledAt: integer("cancelled_at"),
   },
   (table) => [
-    index("enrollments_sender_status_idx").on(table.senderId, table.status),
+    index("enrollments_person_status_idx").on(table.personId, table.status),
     index("enrollments_sequence_status_idx").on(table.sequenceId, table.status),
   ],
 );

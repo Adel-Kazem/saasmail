@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { fetchSequences, enrollSender, type Sequence } from "@/lib/api";
+import { fetchSequences, enrollPerson, type Sequence } from "@/lib/api";
 
 interface EnrollSequenceModalProps {
-  senderId: string;
-  senderName: string | null;
-  senderEmail: string;
+  personId: string;
+  personName: string | null;
+  personEmail: string;
   recipients: string[];
   open: boolean;
   onClose: () => void;
@@ -12,9 +12,9 @@ interface EnrollSequenceModalProps {
 }
 
 export default function EnrollSequenceModal({
-  senderId,
-  senderName,
-  senderEmail,
+  personId,
+  personName,
+  personEmail,
   recipients,
   open,
   onClose,
@@ -82,8 +82,8 @@ export default function EnrollSequenceModal({
     }
 
     try {
-      await enrollSender(selectedId, {
-        senderId,
+      await enrollPerson(selectedId, {
+        personId,
         fromAddress,
         variables: varsObj,
         skipSteps,
@@ -92,7 +92,7 @@ export default function EnrollSequenceModal({
       onEnrolled();
       onClose();
     } catch (err: any) {
-      alert(err.message || "Failed to enroll sender.");
+      alert(err.message || "Failed to enroll person.");
     } finally {
       setSubmitting(false);
     }
@@ -109,7 +109,7 @@ export default function EnrollSequenceModal({
           Add to Sequence
         </h2>
         <p className="mb-4 text-sm text-text-secondary">
-          {senderName ?? senderEmail}
+          {personName ?? personEmail}
         </p>
 
         {loading ? (

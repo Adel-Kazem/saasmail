@@ -75,12 +75,12 @@ describe("api-keys router", () => {
 
   describe("API key authentication", () => {
     it("authenticates via Bearer sk_ token", async () => {
-      const res = await authFetch("/api/senders", { apiKey });
+      const res = await authFetch("/api/people", { apiKey });
       expect(res.status).toBe(200);
     });
 
     it("rejects invalid api key", async () => {
-      const res = await authFetch("/api/senders", {
+      const res = await authFetch("/api/people", {
         apiKey: "sk_invalid_key_here_1234567890ab",
       });
       expect(res.status).toBe(401);

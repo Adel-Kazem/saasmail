@@ -4,7 +4,7 @@ export const sentEmails = sqliteTable(
   "sent_emails",
   {
     id: text("id").primaryKey(),
-    senderId: text("sender_id"),
+    personId: text("person_id"),
     fromAddress: text("from_address").notNull(),
     toAddress: text("to_address").notNull(),
     subject: text("subject").notNull(),
@@ -17,6 +17,6 @@ export const sentEmails = sqliteTable(
     createdAt: integer("created_at").notNull(),
   },
   (table) => [
-    index("sent_emails_sender_sent_idx").on(table.senderId, table.sentAt),
+    index("sent_emails_person_sent_idx").on(table.personId, table.sentAt),
   ],
 );

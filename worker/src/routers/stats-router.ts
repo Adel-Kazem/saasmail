@@ -1,6 +1,6 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { sql } from "drizzle-orm";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { emails } from "../db/emails.schema";
 import { json200Response } from "../lib/helpers";
 import type { Variables } from "../variables";
@@ -11,7 +11,7 @@ export const statsRouter = new OpenAPIHono<{
 }>();
 
 const StatsSchema = z.object({
-  totalSenders: z.number(),
+  totalPeople: z.number(),
   totalEmails: z.number(),
   unreadCount: z.number(),
   recipients: z.array(z.string()),
@@ -63,9 +63,9 @@ statsRouter.openapi(statsRoute, async (c) => {
     unreadCount = result[0]?.unread ?? 0;
   }
 
-  const senderCount = await db
+  const personCount = await db
     .select({ count: sql<number>`COUNT(*)` })
-    .from(senders);
+    .from(people);
 
   const recipientRows = await db
     .select({ recipient: emails.recipient })
@@ -74,7 +74,7 @@ statsRouter.openapi(statsRoute, async (c) => {
 
   return c.json(
     {
-      totalSenders: senderCount[0]?.count ?? 0,
+      totalPeople: personCount[0]?.count ?? 0,
       totalEmails,
       unreadCount,
       recipients: recipientRows.map((r) => r.recipient),

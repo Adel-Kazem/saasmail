@@ -1,6 +1,6 @@
 export * from "drizzle-orm";
 export * from "./auth.schema";
-export * from "./senders.schema";
+export * from "./people.schema";
 export * from "./emails.schema";
 export * from "./sent-emails.schema";
 export * from "./attachments.schema";

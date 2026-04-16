@@ -3,7 +3,7 @@ import {
   applyMigrations,
   cleanDb,
   createTestUser,
-  createTestSender,
+  createTestPerson,
   createTestTemplate,
   getDb,
   authFetch,
@@ -11,9 +11,9 @@ import {
 import { sequenceEnrollments } from "../db/sequence-enrollments.schema";
 import { sequenceEmails } from "../db/sequence-emails.schema";
 import { eq } from "drizzle-orm";
-import { cancelSequencesForSender } from "../lib/cancel-sequence";
+import { cancelSequencesForPerson } from "../lib/cancel-sequence";
 
-describe("cancelSequencesForSender", () => {
+describe("cancelSequencesForPerson", () => {
   beforeAll(async () => {
     await applyMigrations();
   });
@@ -25,7 +25,7 @@ describe("cancelSequencesForSender", () => {
 
   it("cancels active enrollments and pending/queued emails", async () => {
     const db = getDb();
-    await createTestSender({ id: "s1", email: "a@test.com" });
+    await createTestPerson({ id: "s1", email: "a@test.com" });
     await createTestTemplate({ slug: "welcome" });
 
     // Create a sequence and enrollment directly
@@ -44,7 +44,7 @@ describe("cancelSequencesForSender", () => {
     await db.insert(sequenceEnrollments).values({
       id: "enr-1",
       sequenceId: "seq-1",
-      senderId: "s1",
+      personId: "s1",
       status: "active",
       variables: "{}",
       enrolledAt: now,
@@ -69,7 +69,7 @@ describe("cancelSequencesForSender", () => {
       },
     ]);
 
-    await cancelSequencesForSender(db, "s1");
+    await cancelSequencesForPerson(db, "s1");
 
     const enrollment = await db
       .select()
@@ -90,13 +90,13 @@ describe("cancelSequencesForSender", () => {
 
   it("does nothing when no active enrollments", async () => {
     const db = getDb();
-    await cancelSequencesForSender(db, "nonexistent-sender");
+    await cancelSequencesForPerson(db, "nonexistent-person");
     // No error thrown
   });
 
   it("does not cancel already-sent emails", async () => {
     const db = getDb();
-    await createTestSender({ id: "s1", email: "a@test.com" });
+    await createTestPerson({ id: "s1", email: "a@test.com" });
     await createTestTemplate({ slug: "welcome" });
     const now = Math.floor(Date.now() / 1000);
 
@@ -113,7 +113,7 @@ describe("cancelSequencesForSender", () => {
     await db.insert(sequenceEnrollments).values({
       id: "enr-1",
       sequenceId: "seq-1",
-      senderId: "s1",
+      personId: "s1",
       status: "active",
       variables: "{}",
       enrolledAt: now,
@@ -129,7 +129,7 @@ describe("cancelSequencesForSender", () => {
       sentAt: now - 1800,
     });
 
-    await cancelSequencesForSender(db, "s1");
+    await cancelSequencesForPerson(db, "s1");
 
     const emailRow = await db
       .select()

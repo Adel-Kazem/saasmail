@@ -1,7 +1,7 @@
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 
-export const senders = sqliteTable(
-  "senders",
+export const people = sqliteTable(
+  "people",
   {
     id: text("id").primaryKey(),
     email: text("email").notNull().unique(),
@@ -12,5 +12,5 @@ export const senders = sqliteTable(
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
-  (table) => [index("senders_last_email_at_idx").on(table.lastEmailAt)],
+  (table) => [index("people_last_email_at_idx").on(table.lastEmailAt)],
 );

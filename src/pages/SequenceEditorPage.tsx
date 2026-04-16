@@ -194,11 +194,11 @@ export default function SequenceEditorPage() {
             Enroll via API
           </h2>
           <p className="mb-2 text-xs text-text-secondary">
-            Use this endpoint to programmatically enroll a sender into this
+            Use this endpoint to programmatically enroll a person into this
             sequence. Provide either{" "}
-            <code className="text-accent">senderId</code> (existing sender) or{" "}
-            <code className="text-accent">senderEmail</code> (looks up or
-            creates the sender automatically):
+            <code className="text-accent">personId</code> (existing person) or{" "}
+            <code className="text-accent">personEmail</code> (looks up or
+            creates the person automatically):
           </p>
           <pre className="overflow-x-auto rounded-lg border border-border-dark bg-main p-4 text-xs text-text-secondary">
             {(() => {
@@ -224,7 +224,7 @@ export default function SequenceEditorPage() {
                   : undefined;
               const body = JSON.stringify(
                 {
-                  senderEmail: "<RECIPIENT_EMAIL>",
+                  personEmail: "<RECIPIENT_EMAIL>",
                   fromAddress: "<YOUR_SENDING_ADDRESS>",
                   ...(varsObj ? { variables: varsObj } : {}),
                 },

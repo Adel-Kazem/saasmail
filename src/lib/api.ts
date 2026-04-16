@@ -1,4 +1,4 @@
-export interface Sender {
+export interface Person {
   id: string;
   email: string;
   name: string | null;
@@ -9,7 +9,7 @@ export interface Sender {
   latestSubject?: string | null;
 }
 
-export interface GroupedSender {
+export interface GroupedPerson {
   id: string;
   email: string;
   name: string | null;
@@ -19,8 +19,8 @@ export interface GroupedSender {
   recipientCount: number;
 }
 
-export interface PaginatedGroupedSenders {
-  data: GroupedSender[];
+export interface PaginatedGroupedPeople {
+  data: GroupedPerson[];
   total: number;
   page: number;
   limit: number;
@@ -29,7 +29,7 @@ export interface PaginatedGroupedSenders {
 export interface Email {
   id: string;
   type: "received" | "sent";
-  senderId: string | null;
+  personId: string | null;
   recipient: string | null;
   fromAddress: string | null;
   toAddress: string | null;
@@ -52,7 +52,7 @@ export interface Attachment {
 }
 
 export interface Stats {
-  totalSenders: number;
+  totalPeople: number;
   totalEmails: number;
   unreadCount: number;
   recipients: string[];
@@ -69,47 +69,47 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
-export interface PaginatedSenders {
-  data: Sender[];
+export interface PaginatedPeople {
+  data: Person[];
   total: number;
   page: number;
   limit: number;
 }
 
-export async function fetchGroupedSenders(params?: {
+export async function fetchGroupedPeople(params?: {
   q?: string;
   page?: number;
   limit?: number;
-}): Promise<PaginatedGroupedSenders> {
+}): Promise<PaginatedGroupedPeople> {
   const qs = new URLSearchParams();
   if (params?.q) qs.set("q", params.q);
   if (params?.page) qs.set("page", params.page.toString());
   if (params?.limit) qs.set("limit", params.limit.toString());
-  return apiFetch(`/api/senders/grouped?${qs}`);
+  return apiFetch(`/api/people/grouped?${qs}`);
 }
 
-export async function fetchSenders(params?: {
+export async function fetchPeople(params?: {
   q?: string;
   recipient?: string;
-  senderId?: string;
+  personId?: string;
   page?: number;
   limit?: number;
-}): Promise<PaginatedSenders> {
+}): Promise<PaginatedPeople> {
   const qs = new URLSearchParams();
   if (params?.q) qs.set("q", params.q);
   if (params?.recipient) qs.set("recipient", params.recipient);
-  if (params?.senderId) qs.set("senderId", params.senderId);
+  if (params?.personId) qs.set("personId", params.personId);
   if (params?.page) qs.set("page", params.page.toString());
   if (params?.limit) qs.set("limit", params.limit.toString());
-  return apiFetch(`/api/senders?${qs}`);
+  return apiFetch(`/api/people?${qs}`);
 }
 
-export async function fetchSender(id: string): Promise<Sender> {
-  return apiFetch(`/api/senders/${id}`);
+export async function fetchPerson(id: string): Promise<Person> {
+  return apiFetch(`/api/people/${id}`);
 }
 
-export async function fetchSenderEmails(
-  senderId: string,
+export async function fetchPersonEmails(
+  personId: string,
   params?: { q?: string; recipient?: string; page?: number; limit?: number },
 ): Promise<Email[]> {
   const qs = new URLSearchParams();
@@ -117,7 +117,7 @@ export async function fetchSenderEmails(
   if (params?.recipient) qs.set("recipient", params.recipient);
   if (params?.page) qs.set("page", params.page.toString());
   if (params?.limit) qs.set("limit", params.limit.toString());
-  return apiFetch(`/api/emails/by-sender/${senderId}?${qs}`);
+  return apiFetch(`/api/emails/by-person/${personId}?${qs}`);
 }
 
 export async function fetchEmail(id: string): Promise<Email> {
@@ -373,7 +373,7 @@ export interface SequenceEmail {
 export interface SequenceEnrollment {
   id: string;
   sequenceId: string;
-  senderId: string;
+  personId: string;
   status: string;
   variables: Record<string, string>;
   enrolledAt: number;
@@ -381,13 +381,13 @@ export interface SequenceEnrollment {
 }
 
 export interface EnrollmentWithDetails extends SequenceEnrollment {
-  senderEmail: string;
-  senderName: string | null;
+  personEmail: string;
+  personName: string | null;
   totalSteps: number;
   sentSteps: number;
 }
 
-export interface SenderEnrollmentInfo {
+export interface PersonEnrollmentInfo {
   enrollment: SequenceEnrollment | null;
   scheduledEmails: SequenceEmail[];
   sequenceName: string | null;
@@ -429,10 +429,10 @@ export async function deleteSequence(
   return apiFetch(`/api/sequences/${id}`, { method: "DELETE" });
 }
 
-export async function enrollSender(
+export async function enrollPerson(
   sequenceId: string,
   data: {
-    senderId: string;
+    personId: string;
     fromAddress: string;
     variables?: Record<string, string>;
     skipSteps?: number[];
@@ -449,10 +449,10 @@ export async function enrollSender(
   });
 }
 
-export async function fetchSenderEnrollment(
-  senderId: string,
-): Promise<SenderEnrollmentInfo> {
-  return apiFetch(`/api/sequences/senders/${senderId}/enrollment`);
+export async function fetchPersonEnrollment(
+  personId: string,
+): Promise<PersonEnrollmentInfo> {
+  return apiFetch(`/api/sequences/people/${personId}/enrollment`);
 }
 
 export async function cancelEnrollment(

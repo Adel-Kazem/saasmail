@@ -3,10 +3,10 @@ import { eq, like, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { Resend } from "resend";
 import { getOAuthSession } from "../auth";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { emails } from "../db/emails.schema";
 import { sentEmails } from "../db/sent-emails.schema";
-import { cancelSequencesForSender } from "../lib/cancel-sequence";
+import { cancelSequencesForPerson } from "../lib/cancel-sequence";
 import { deleteEmailWithAttachments } from "../lib/delete-email";
 import { injectDb } from "../db/middleware";
 import type { Variables } from "../variables";
@@ -57,17 +57,17 @@ function jsonRpcError(
 // ─── Tool definitions ─────────────────────────────────────────────────────────
 const TOOLS = [
   {
-    name: "cmail_list_senders",
+    name: "cmail_list_people",
     description:
-      "List email senders/contacts with optional search. Returns each sender with id, email, name, unread count, and last email timestamp. Use this to discover senders before reading their emails.",
-    annotations: { readOnlyHint: true, title: "List Senders" },
+      "List email contacts/people with optional search. Returns each person with id, email, name, unread count, and last email timestamp. Use this to discover people before reading their emails.",
+    annotations: { readOnlyHint: true, title: "List People" },
     inputSchema: {
       type: "object",
       properties: {
         q: {
           type: "string",
           description:
-            "Optional search query to filter senders by email address.",
+            "Optional search query to filter people by email address.",
         },
         page: {
           type: "number",
@@ -82,32 +82,32 @@ const TOOLS = [
     },
   },
   {
-    name: "cmail_get_sender",
+    name: "cmail_get_person",
     description:
-      "Get details for a single sender by ID. Returns the sender's email, name, unread/total counts, and timestamps.",
-    annotations: { readOnlyHint: true, title: "Get Sender" },
+      "Get details for a single person by ID. Returns the person's email, name, unread/total counts, and timestamps.",
+    annotations: { readOnlyHint: true, title: "Get Person" },
     inputSchema: {
       type: "object",
       properties: {
-        sender_id: {
+        person_id: {
           type: "string",
-          description: "The ID of the sender to retrieve.",
+          description: "The ID of the person to retrieve.",
         },
       },
-      required: ["sender_id"],
+      required: ["person_id"],
     },
   },
   {
     name: "cmail_list_emails",
     description:
-      "List all emails (received and sent) for a given sender. Returns a chronologically sorted array combining received and sent emails.",
-    annotations: { readOnlyHint: true, title: "List Emails for Sender" },
+      "List all emails (received and sent) for a given person. Returns a chronologically sorted array combining received and sent emails.",
+    annotations: { readOnlyHint: true, title: "List Emails for Person" },
     inputSchema: {
       type: "object",
       properties: {
-        sender_id: {
+        person_id: {
           type: "string",
-          description: "The sender ID whose emails to list.",
+          description: "The person ID whose emails to list.",
         },
         page: { type: "number", description: "Page number (default 1)." },
         limit: {
@@ -115,7 +115,7 @@ const TOOLS = [
           description: "Results per page (default 50).",
         },
       },
-      required: ["sender_id"],
+      required: ["person_id"],
     },
   },
   {
@@ -236,7 +236,7 @@ type Db = DrizzleD1Database<any>;
 
 class McpToolError extends Error {}
 
-async function listSenders(db: Db, args: Record<string, unknown>) {
+async function listPeople(db: Db, args: Record<string, unknown>) {
   const q = args.q as string | undefined;
   const page = Number(args.page ?? 1);
   const limit = Number(args.limit ?? 50);
@@ -247,39 +247,39 @@ async function listSenders(db: Db, args: Record<string, unknown>) {
     const escaped = q.replace(/[%_\\]/g, "\\$&");
     rows = await db
       .select()
-      .from(senders)
-      .where(sql`${senders.email} LIKE ${"%" + escaped + "%"} ESCAPE '\\'`)
-      .orderBy(desc(senders.lastEmailAt))
+      .from(people)
+      .where(sql`${people.email} LIKE ${"%" + escaped + "%"} ESCAPE '\\'`)
+      .orderBy(desc(people.lastEmailAt))
       .limit(limit)
       .offset(offset);
   } else {
     rows = await db
       .select()
-      .from(senders)
-      .orderBy(desc(senders.lastEmailAt))
+      .from(people)
+      .orderBy(desc(people.lastEmailAt))
       .limit(limit)
       .offset(offset);
   }
   return rows;
 }
 
-async function getSender(db: Db, args: Record<string, unknown>) {
-  const id = args.sender_id as string;
-  if (!id) throw new McpToolError("sender_id is required");
+async function getPerson(db: Db, args: Record<string, unknown>) {
+  const id = args.person_id as string;
+  if (!id) throw new McpToolError("person_id is required");
 
   const rows = await db
     .select()
-    .from(senders)
-    .where(eq(senders.id, id))
+    .from(people)
+    .where(eq(people.id, id))
     .limit(1);
 
-  if (rows.length === 0) throw new McpToolError("Sender not found");
+  if (rows.length === 0) throw new McpToolError("Person not found");
   return rows[0];
 }
 
 async function listEmails(db: Db, args: Record<string, unknown>) {
-  const senderId = args.sender_id as string;
-  if (!senderId) throw new McpToolError("sender_id is required");
+  const personId = args.person_id as string;
+  if (!personId) throw new McpToolError("person_id is required");
 
   const page = Number(args.page ?? 1);
   const limit = Number(args.limit ?? 50);
@@ -288,7 +288,7 @@ async function listEmails(db: Db, args: Record<string, unknown>) {
   const received = await db
     .select()
     .from(emails)
-    .where(eq(emails.senderId, senderId))
+    .where(eq(emails.personId, personId))
     .orderBy(emails.receivedAt)
     .limit(limit)
     .offset(offset);
@@ -296,7 +296,7 @@ async function listEmails(db: Db, args: Record<string, unknown>) {
   const sent = await db
     .select()
     .from(sentEmails)
-    .where(eq(sentEmails.senderId, senderId))
+    .where(eq(sentEmails.personId, personId))
     .orderBy(sentEmails.sentAt)
     .limit(limit)
     .offset(offset);
@@ -362,18 +362,18 @@ async function sendEmail(
     text: bodyText,
   });
 
-  const existingSender = await db
-    .select({ id: senders.id })
-    .from(senders)
-    .where(eq(senders.email, to))
+  const existingPerson = await db
+    .select({ id: people.id })
+    .from(people)
+    .where(eq(people.email, to))
     .limit(1);
 
-  const senderId = existingSender[0]?.id ?? null;
+  const personId = existingPerson[0]?.id ?? null;
 
   const id = nanoid();
   await db.insert(sentEmails).values({
     id,
-    senderId,
+    personId,
     fromAddress,
     toAddress: to,
     subject,
@@ -385,8 +385,8 @@ async function sendEmail(
     createdAt: now,
   });
 
-  if (senderId) {
-    await cancelSequencesForSender(db, senderId);
+  if (personId) {
+    await cancelSequencesForPerson(db, personId);
   }
 
   return { id, status: result.error ? "failed" : "sent" };
@@ -418,14 +418,14 @@ async function replyEmail(
   if (original.length === 0) throw new McpToolError("Email not found");
 
   const orig = original[0];
-  const sender = await db
-    .select({ email: senders.email })
-    .from(senders)
-    .where(eq(senders.id, orig.senderId))
+  const person = await db
+    .select({ email: people.email })
+    .from(people)
+    .where(eq(people.id, orig.personId))
     .limit(1);
-  if (sender.length === 0) throw new McpToolError("Sender not found");
+  if (person.length === 0) throw new McpToolError("Person not found");
 
-  const toAddress = sender[0].email;
+  const toAddress = person[0].email;
   const subject = orig.subject?.startsWith("Re: ")
     ? orig.subject
     : `Re: ${orig.subject || ""}`;
@@ -443,7 +443,7 @@ async function replyEmail(
   const id = nanoid();
   await db.insert(sentEmails).values({
     id,
-    senderId: orig.senderId,
+    personId: orig.personId,
     fromAddress,
     toAddress,
     subject,
@@ -456,7 +456,7 @@ async function replyEmail(
     createdAt: now,
   });
 
-  await cancelSequencesForSender(db, orig.senderId);
+  await cancelSequencesForPerson(db, orig.personId);
 
   return { id, status: result.error ? "failed" : "sent" };
 }
@@ -497,10 +497,10 @@ async function callTool(
   env: CloudflareBindings,
 ) {
   switch (name) {
-    case "cmail_list_senders":
-      return listSenders(db, args);
-    case "cmail_get_sender":
-      return getSender(db, args);
+    case "cmail_list_people":
+      return listPeople(db, args);
+    case "cmail_get_person":
+      return getPerson(db, args);
     case "cmail_list_emails":
       return listEmails(db, args);
     case "cmail_read_email":
@@ -542,7 +542,7 @@ async function handleRpcMessage(
             title: "cmail",
             version: "0.1.0",
             description:
-              "MCP server for cmail — read, send, and manage emails. Exposes tools to list senders, browse email threads, compose new messages, and manage your inbox.",
+              "MCP server for cmail — read, send, and manage emails. Exposes tools to list people, browse email threads, compose new messages, and manage your inbox.",
           },
         });
 

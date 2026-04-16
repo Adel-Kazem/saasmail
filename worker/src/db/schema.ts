@@ -1,6 +1,6 @@
 import * as authSchema from "./auth.schema";
 import { invitations } from "./invitations.schema";
-import { senders } from "./senders.schema";
+import { people } from "./people.schema";
 import { emails } from "./emails.schema";
 import { sentEmails } from "./sent-emails.schema";
 import { attachments } from "./attachments.schema";
@@ -13,7 +13,7 @@ import { sequenceEmails } from "./sequence-emails.schema";
 export const schema = {
   ...authSchema,
   invitations,
-  senders,
+  people,
   emails,
   sentEmails,
   attachments,

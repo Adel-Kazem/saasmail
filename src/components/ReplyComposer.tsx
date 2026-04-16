@@ -5,8 +5,8 @@ import { replyToEmail, fetchTemplates, type EmailTemplate } from "@/lib/api";
 
 interface ReplyComposerProps {
   emailId: string;
-  senderName: string | null;
-  senderEmail: string;
+  personName: string | null;
+  personEmail: string;
   recipients: string[];
   onClose: () => void;
   onSent: () => void;
@@ -28,8 +28,8 @@ function extractVariables(subject: string, bodyHtml: string): string[] {
 
 export default function ReplyComposer({
   emailId,
-  senderName,
-  senderEmail,
+  personName,
+  personEmail,
   recipients,
   onClose,
   onSent,
@@ -58,15 +58,15 @@ export default function ReplyComposer({
     );
   }, [selectedTemplate]);
 
-  // Auto-fill variables when template or sender changes
+  // Auto-fill variables when template or person changes
   useEffect(() => {
     if (!selectedTemplate) return;
     const vars: Record<string, string> = {};
     for (const v of requiredVars) {
-      if (v.toLowerCase() === "name" && senderName) {
-        vars[v] = senderName;
+      if (v.toLowerCase() === "name" && personName) {
+        vars[v] = personName;
       } else if (v.toLowerCase() === "email") {
-        vars[v] = senderEmail;
+        vars[v] = personEmail;
       } else {
         vars[v] = templateVars[v] ?? "";
       }

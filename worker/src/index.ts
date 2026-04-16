@@ -11,7 +11,7 @@ import { users } from "./db/auth.schema";
 import { eq } from "drizzle-orm";
 import { hashKey } from "./lib/crypto";
 import { handleEmail } from "./email-handler";
-import { sendersRouter } from "./routers/senders-router";
+import { peopleRouter } from "./routers/people-router";
 import { emailsRouter } from "./routers/emails-router";
 import { sendRouter } from "./routers/send-router";
 import { attachmentsRouter } from "./routers/attachments-router";
@@ -122,7 +122,7 @@ const requireAdmin: MiddlewareHandler<{
 };
 
 // API Routes
-app.route("/api/senders", sendersRouter);
+app.route("/api/people", peopleRouter);
 app.route("/api/emails", emailsRouter);
 app.route("/api/send", sendRouter);
 app.route("/api/attachments", attachmentsRouter);

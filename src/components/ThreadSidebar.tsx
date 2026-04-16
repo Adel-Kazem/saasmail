@@ -5,7 +5,7 @@ import type { Email } from "@/lib/api";
 
 interface ThreadSidebarProps {
   emails: Email[];
-  senderEmail: string;
+  personEmail: string;
   onOpenHtml: (email: Email) => void;
   onMarkRead: (email: Email) => void;
   onReply: (emailId: string) => void;
@@ -15,7 +15,7 @@ interface ThreadSidebarProps {
 
 export default function ThreadSidebar({
   emails,
-  senderEmail,
+  personEmail,
   onOpenHtml,
   onMarkRead,
   onReply,
@@ -45,7 +45,7 @@ export default function ThreadSidebar({
             <MessageBubble
               key={email.id}
               email={email}
-              senderEmail={senderEmail}
+              personEmail={personEmail}
               onOpenHtml={onOpenHtml}
               onMarkRead={onMarkRead}
               onReply={onReply}

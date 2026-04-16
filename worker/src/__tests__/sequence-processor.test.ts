@@ -4,7 +4,7 @@ import {
   applyMigrations,
   cleanDb,
   createTestUser,
-  createTestSender,
+  createTestPerson,
   createTestTemplate,
   getDb,
 } from "./helpers";
@@ -29,7 +29,7 @@ describe("sequence processor - handleScheduled", () => {
     const db = getDb();
     const now = Math.floor(Date.now() / 1000);
 
-    await createTestSender({ id: "s1", email: "a@test.com" });
+    await createTestPerson({ id: "s1", email: "a@test.com" });
     await createTestTemplate({ slug: "welcome" });
 
     await db.insert(sequences).values({
@@ -45,7 +45,7 @@ describe("sequence processor - handleScheduled", () => {
     await db.insert(sequenceEnrollments).values({
       id: "enr-1",
       sequenceId: "seq-1",
-      senderId: "s1",
+      personId: "s1",
       status: "active",
       variables: "{}",
       enrolledAt: now,
@@ -76,7 +76,7 @@ describe("sequence processor - handleScheduled", () => {
     const db = getDb();
     const now = Math.floor(Date.now() / 1000);
 
-    await createTestSender({ id: "s1", email: "a@test.com" });
+    await createTestPerson({ id: "s1", email: "a@test.com" });
     await createTestTemplate({ slug: "welcome" });
 
     await db.insert(sequences).values({
@@ -92,7 +92,7 @@ describe("sequence processor - handleScheduled", () => {
     await db.insert(sequenceEnrollments).values({
       id: "enr-1",
       sequenceId: "seq-1",
-      senderId: "s1",
+      personId: "s1",
       status: "active",
       variables: "{}",
       enrolledAt: now,

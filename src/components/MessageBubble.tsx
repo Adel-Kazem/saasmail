@@ -4,7 +4,7 @@ import type { Email } from "@/lib/api";
 
 interface MessageBubbleProps {
   email: Email;
-  senderEmail: string;
+  personEmail: string;
   onOpenHtml: (email: Email) => void;
   onMarkRead: (email: Email) => void;
   onReply: (emailId: string) => void;
@@ -18,7 +18,7 @@ const TRUNCATE_LENGTH = MAX_LINES * APPROX_CHARS_PER_LINE;
 
 export default function MessageBubble({
   email,
-  senderEmail,
+  personEmail,
   onOpenHtml,
   onMarkRead,
   onReply,
@@ -42,10 +42,10 @@ export default function MessageBubble({
     ? text.slice(0, truncateLength).trimEnd() + "..."
     : text;
 
-  const senderName = isSent ? "You" : senderEmail;
+  const senderName = isSent ? "You" : personEmail;
 
   const toAddress = isSent
-    ? email.toAddress || senderEmail
+    ? email.toAddress || personEmail
     : email.recipient || email.fromAddress || "";
 
   const timestamp = new Date(email.timestamp * 1000);

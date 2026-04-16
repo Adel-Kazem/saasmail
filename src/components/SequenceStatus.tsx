@@ -1,28 +1,28 @@
 import { useState, useEffect } from "react";
 import {
-  fetchSenderEnrollment,
+  fetchPersonEnrollment,
   cancelEnrollment,
-  type SenderEnrollmentInfo,
+  type PersonEnrollmentInfo,
 } from "@/lib/api";
 
 interface SequenceStatusProps {
-  senderId: string;
+  personId: string;
   onStatusChange: () => void;
 }
 
 export default function SequenceStatus({
-  senderId,
+  personId,
   onStatusChange,
 }: SequenceStatusProps) {
-  const [info, setInfo] = useState<SenderEnrollmentInfo | null>(null);
+  const [info, setInfo] = useState<PersonEnrollmentInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetchSenderEnrollment(senderId)
+    fetchPersonEnrollment(personId)
       .then(setInfo)
       .finally(() => setLoading(false));
-  }, [senderId]);
+  }, [personId]);
 
   if (loading || !info || !info.enrollment) return null;
 

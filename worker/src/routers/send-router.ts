@@ -3,10 +3,10 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { Resend } from "resend";
 import { sentEmails } from "../db/sent-emails.schema";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { emails } from "../db/emails.schema";
 import { json201Response } from "../lib/helpers";
-import { cancelSequencesForSender } from "../lib/cancel-sequence";
+import { cancelSequencesForPerson } from "../lib/cancel-sequence";
 import { emailTemplates } from "../db/email-templates.schema";
 import { interpolate, extractVariables } from "../lib/interpolate";
 import type { Variables } from "../variables";
@@ -65,20 +65,20 @@ sendRouter.openapi(sendEmailRoute, async (c) => {
     text: bodyText,
   });
 
-  // Find sender if they exist
-  const existingSender = await db
-    .select({ id: senders.id })
-    .from(senders)
-    .where(eq(senders.email, to))
+  // Find person if they exist
+  const existingPerson = await db
+    .select({ id: people.id })
+    .from(people)
+    .where(eq(people.email, to))
     .limit(1);
 
-  const senderId = existingSender[0]?.id ?? null;
+  const personId = existingPerson[0]?.id ?? null;
 
   // Store sent email
   const id = nanoid();
   await db.insert(sentEmails).values({
     id,
-    senderId,
+    personId,
     fromAddress,
     toAddress: to,
     subject,
@@ -91,8 +91,8 @@ sendRouter.openapi(sendEmailRoute, async (c) => {
   });
 
   // Cancel any active sequences for this recipient
-  if (senderId) {
-    await cancelSequencesForSender(db, senderId);
+  if (personId) {
+    await cancelSequencesForPerson(db, personId);
   }
 
   return c.json(
@@ -152,18 +152,18 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
 
   const orig = original[0];
 
-  // Get sender email address
-  const sender = await db
-    .select({ email: senders.email })
-    .from(senders)
-    .where(eq(senders.id, orig.senderId))
+  // Get person email address
+  const person = await db
+    .select({ email: people.email })
+    .from(people)
+    .where(eq(people.id, orig.personId))
     .limit(1);
 
-  if (sender.length === 0) {
-    return c.json({ error: "Sender not found" }, 404);
+  if (person.length === 0) {
+    return c.json({ error: "Person not found" }, 404);
   }
 
-  const toAddress = sender[0].email;
+  const toAddress = person[0].email;
 
   // Determine subject and body
   let finalSubject: string;
@@ -231,7 +231,7 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
   const id = nanoid();
   await db.insert(sentEmails).values({
     id,
-    senderId: orig.senderId,
+    personId: orig.personId,
     fromAddress: fromAddress,
     toAddress,
     subject: finalSubject,
@@ -244,8 +244,8 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
     createdAt: now,
   });
 
-  // Cancel any active sequences for this sender
-  await cancelSequencesForSender(db, orig.senderId);
+  // Cancel any active sequences for this person
+  await cancelSequencesForPerson(db, orig.personId);
 
   return c.json(
     {

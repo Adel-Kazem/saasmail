@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  fetchSenderEmails,
+  fetchPersonEmails,
   markEmailRead,
   deleteEmail,
-  fetchSenderEnrollment,
-  type Sender,
+  fetchPersonEnrollment,
+  type Person,
   type Email,
-  type SenderEnrollmentInfo,
+  type PersonEnrollmentInfo,
 } from "@/lib/api";
 import EnrollSequenceModal from "@/components/EnrollSequenceModal";
 import SequenceStatus from "@/components/SequenceStatus";
@@ -17,23 +17,23 @@ import ReplyComposer from "@/components/ReplyComposer";
 import ThreadSidebar from "@/components/ThreadSidebar";
 import { MessageSquare } from "lucide-react";
 
-interface SenderDetailProps {
-  sender: Sender;
+interface PersonDetailProps {
+  person: Person;
 }
 
-export default function SenderDetail({ sender }: SenderDetailProps) {
+export default function PersonDetail({ person }: PersonDetailProps) {
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrollModalOpen, setEnrollModalOpen] = useState(false);
   const [enrollmentInfo, setEnrollmentInfo] =
-    useState<SenderEnrollmentInfo | null>(null);
+    useState<PersonEnrollmentInfo | null>(null);
   const [htmlPreviewEmail, setHtmlPreviewEmail] = useState<Email | null>(null);
   const [replyToEmailId, setReplyToEmailId] = useState<string | null>(null);
   const [threadOpen, setThreadOpen] = useState(false);
 
   function refetchEmails() {
-    fetchSenderEmails(sender.id, {
-      recipient: sender.recipient,
+    fetchPersonEmails(person.id, {
+      recipient: person.recipient,
     }).then(setEmails);
   }
 
@@ -41,17 +41,17 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
     setLoading(true);
     setReplyToEmailId(null);
     setThreadOpen(false);
-    fetchSenderEmails(sender.id, { recipient: sender.recipient })
+    fetchPersonEmails(person.id, { recipient: person.recipient })
       .then(setEmails)
       .finally(() => setLoading(false));
-  }, [sender.id, sender.recipient]);
+  }, [person.id, person.recipient]);
 
   useEffect(() => {
-    fetchSenderEnrollment(sender.id).then(setEnrollmentInfo);
-  }, [sender.id]);
+    fetchPersonEnrollment(person.id).then(setEnrollmentInfo);
+  }, [person.id]);
 
   function refreshEnrollment() {
-    fetchSenderEnrollment(sender.id).then(setEnrollmentInfo);
+    fetchPersonEnrollment(person.id).then(setEnrollmentInfo);
   }
 
   async function handleMarkRead(email: Email) {
@@ -91,14 +91,14 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
       <div className="border-b border-border-dark px-4 sm:px-6 py-3">
         <div>
           <h2 className="text-sm font-semibold text-text-primary">
-            {sender.name || sender.email}
+            {person.name || person.email}
           </h2>
-          {sender.name && (
-            <p className="text-xs text-text-secondary">{sender.email}</p>
+          {person.name && (
+            <p className="text-xs text-text-secondary">{person.email}</p>
           )}
           <p className="text-[11px] text-text-tertiary">
-            &rarr; {sender.recipient} &middot; {sender.totalCount} email
-            {sender.totalCount !== 1 ? "s" : ""}
+            &rarr; {person.recipient} &middot; {person.totalCount} email
+            {person.totalCount !== 1 ? "s" : ""}
           </p>
         </div>
       </div>
@@ -107,7 +107,7 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
       <div className="border-b border-border-dark px-4 sm:px-6 py-2">
         {enrollmentInfo?.enrollment ? (
           <SequenceStatus
-            senderId={sender.id}
+            personId={person.id}
             onStatusChange={refreshEnrollment}
           />
         ) : (
@@ -142,7 +142,7 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
                 {/* Latest email display */}
                 <MessageBubble
                   email={latestEmail}
-                  senderEmail={sender.email}
+                  personEmail={person.email}
                   onOpenHtml={setHtmlPreviewEmail}
                   onMarkRead={handleMarkRead}
                   onReply={setReplyToEmailId}
@@ -160,9 +160,9 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
           {replyToEmailId && (
             <ReplyComposer
               emailId={replyToEmailId}
-              senderName={sender.name}
-              senderEmail={sender.email}
-              recipients={[sender.recipient]}
+              personName={person.name}
+              personEmail={person.email}
+              recipients={[person.recipient]}
               onClose={() => setReplyToEmailId(null)}
               onSent={refetchEmails}
             />
@@ -173,7 +173,7 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
         {threadOpen && threadEmails.length > 0 && (
           <ThreadSidebar
             emails={threadEmails}
-            senderEmail={sender.email}
+            personEmail={person.email}
             onOpenHtml={setHtmlPreviewEmail}
             onMarkRead={handleMarkRead}
             onReply={setReplyToEmailId}
@@ -192,10 +192,10 @@ export default function SenderDetail({ sender }: SenderDetailProps) {
 
       {/* Sequence Enrollment Modal */}
       <EnrollSequenceModal
-        senderId={sender.id}
-        senderName={sender.name}
-        senderEmail={sender.email}
-        recipients={[sender.recipient]}
+        personId={person.id}
+        personName={person.name}
+        personEmail={person.email}
+        recipients={[person.recipient]}
         open={enrollModalOpen}
         onClose={() => setEnrollModalOpen(false)}
         onEnrolled={refreshEnrollment}

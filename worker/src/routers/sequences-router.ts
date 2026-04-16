@@ -5,7 +5,7 @@ import { sequences } from "../db/sequences.schema";
 import { sequenceEnrollments } from "../db/sequence-enrollments.schema";
 import { sequenceEmails } from "../db/sequence-emails.schema";
 import { emailTemplates } from "../db/email-templates.schema";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { json200Response, json201Response } from "../lib/helpers";
 import type { SequenceEmailMessage } from "../lib/sequence-processor";
 import type { Variables } from "../variables";
@@ -38,8 +38,8 @@ const CreateSequenceSchema = z.object({
 
 const EnrollSchema = z
   .object({
-    senderId: z.string().optional(),
-    senderEmail: z.string().email().optional(),
+    personId: z.string().optional(),
+    personEmail: z.string().email().optional(),
     fromAddress: z.string().email(),
     variables: z.record(z.string(), z.string()).optional().default({}),
     skipSteps: z.array(z.number().int()).optional().default([]),
@@ -48,14 +48,14 @@ const EnrollSchema = z
       .optional()
       .default({}),
   })
-  .refine((data) => data.senderId || data.senderEmail, {
-    message: "Either senderId or senderEmail must be provided",
+  .refine((data) => data.personId || data.personEmail, {
+    message: "Either personId or personEmail must be provided",
   });
 
 const EnrollmentSchema = z.object({
   id: z.string(),
   sequenceId: z.string(),
-  senderId: z.string(),
+  personId: z.string(),
   status: z.string(),
   variables: z.any(),
   enrolledAt: z.number(),
@@ -297,13 +297,13 @@ sequencesRouter.openapi(deleteRoute, async (c) => {
   return c.json({ success: true }, 200);
 });
 
-// --- ENROLL a sender ---
+// --- ENROLL a person ---
 const enrollRoute = createRoute({
   method: "post",
   path: "/{id}/enroll",
   tags: ["Sequences"],
   description:
-    "Enroll a sender into a sequence. Computes all scheduled send times upfront.",
+    "Enroll a person into a sequence. Computes all scheduled send times upfront.",
   request: {
     params: z.object({ id: z.string() }),
     body: {
@@ -318,7 +318,7 @@ const enrollRoute = createRoute({
         enrollment: EnrollmentSchema,
         scheduledEmails: z.array(SequenceEmailSchema),
       }),
-      "Sender enrolled",
+      "Person enrolled",
     ),
   },
 });
@@ -327,8 +327,8 @@ sequencesRouter.openapi(enrollRoute, async (c) => {
   const db = c.get("db");
   const { id } = c.req.valid("param");
   const {
-    senderId: inputSenderId,
-    senderEmail,
+    personId: inputPersonId,
+    personEmail,
     fromAddress,
     variables,
     skipSteps,
@@ -347,33 +347,33 @@ sequencesRouter.openapi(enrollRoute, async (c) => {
     return c.json({ error: "Sequence not found" }, 404);
   }
 
-  // Resolve sender: by ID, or by email (create if needed)
-  let senderId: string;
-  if (inputSenderId) {
-    const senderRows = await db
-      .select({ id: senders.id })
-      .from(senders)
-      .where(eq(senders.id, inputSenderId))
+  // Resolve person: by ID, or by email (create if needed)
+  let personId: string;
+  if (inputPersonId) {
+    const personRows = await db
+      .select({ id: people.id })
+      .from(people)
+      .where(eq(people.id, inputPersonId))
       .limit(1);
-    if (senderRows.length === 0) {
-      return c.json({ error: "Sender not found" }, 404);
+    if (personRows.length === 0) {
+      return c.json({ error: "Person not found" }, 404);
     }
-    senderId = inputSenderId;
+    personId = inputPersonId;
   } else {
-    // senderEmail is guaranteed by the schema refinement
+    // personEmail is guaranteed by the schema refinement
     const existing = await db
-      .select({ id: senders.id })
-      .from(senders)
-      .where(eq(senders.email, senderEmail!))
+      .select({ id: people.id })
+      .from(people)
+      .where(eq(people.email, personEmail!))
       .limit(1);
 
     if (existing.length > 0) {
-      senderId = existing[0].id;
+      personId = existing[0].id;
     } else {
-      senderId = nanoid();
-      await db.insert(senders).values({
-        id: senderId,
-        email: senderEmail!,
+      personId = nanoid();
+      await db.insert(people).values({
+        id: personId,
+        email: personEmail!,
         name: null,
         lastEmailAt: now,
         unreadCount: 0,
@@ -384,20 +384,20 @@ sequencesRouter.openapi(enrollRoute, async (c) => {
     }
   }
 
-  // Check sender is not already in an active sequence
+  // Check person is not already in an active sequence
   const existingEnrollment = await db
     .select({ id: sequenceEnrollments.id })
     .from(sequenceEnrollments)
     .where(
       and(
-        eq(sequenceEnrollments.senderId, senderId),
+        eq(sequenceEnrollments.personId, personId),
         eq(sequenceEnrollments.status, "active"),
       ),
     )
     .limit(1);
 
   if (existingEnrollment.length > 0) {
-    return c.json({ error: "Sender is already in an active sequence" }, 400);
+    return c.json({ error: "Person is already in an active sequence" }, 400);
   }
 
   const steps: Array<{
@@ -421,7 +421,7 @@ sequencesRouter.openapi(enrollRoute, async (c) => {
   const enrollment = {
     id: enrollmentId,
     sequenceId: id,
-    senderId,
+    personId,
     fromAddress,
     status: "active",
     variables: JSON.stringify(variables),
@@ -468,14 +468,14 @@ sequencesRouter.openapi(enrollRoute, async (c) => {
   );
 });
 
-// --- GET enrollment for a sender ---
+// --- GET enrollment for a person ---
 const getEnrollmentRoute = createRoute({
   method: "get",
-  path: "/senders/{senderId}/enrollment",
+  path: "/people/{personId}/enrollment",
   tags: ["Sequences"],
-  description: "Get active enrollment and scheduled emails for a sender.",
+  description: "Get active enrollment and scheduled emails for a person.",
   request: {
-    params: z.object({ senderId: z.string() }),
+    params: z.object({ personId: z.string() }),
   },
   responses: {
     ...json200Response(
@@ -491,14 +491,14 @@ const getEnrollmentRoute = createRoute({
 
 sequencesRouter.openapi(getEnrollmentRoute, async (c) => {
   const db = c.get("db");
-  const { senderId } = c.req.valid("param");
+  const { personId } = c.req.valid("param");
 
   const enrollments = await db
     .select()
     .from(sequenceEnrollments)
     .where(
       and(
-        eq(sequenceEnrollments.senderId, senderId),
+        eq(sequenceEnrollments.personId, personId),
         eq(sequenceEnrollments.status, "active"),
       ),
     )
@@ -606,8 +606,8 @@ const listEnrollmentsRoute = createRoute({
     ...json200Response(
       z.array(
         EnrollmentSchema.extend({
-          senderEmail: z.string(),
-          senderName: z.string().nullable(),
+          personEmail: z.string(),
+          personName: z.string().nullable(),
           totalSteps: z.number(),
           sentSteps: z.number(),
         }),
@@ -629,11 +629,11 @@ sequencesRouter.openapi(listEnrollmentsRoute, async (c) => {
 
   const result = [];
   for (const enrollment of enrollments) {
-    // Get sender info
-    const senderRow = await db
-      .select({ email: senders.email, name: senders.name })
-      .from(senders)
-      .where(eq(senders.id, enrollment.senderId))
+    // Get person info
+    const personRow = await db
+      .select({ email: people.email, name: people.name })
+      .from(people)
+      .where(eq(people.id, enrollment.personId))
       .limit(1);
 
     // Get email counts
@@ -645,8 +645,8 @@ sequencesRouter.openapi(listEnrollmentsRoute, async (c) => {
     result.push({
       ...enrollment,
       variables: JSON.parse(enrollment.variables),
-      senderEmail: senderRow[0]?.email ?? "unknown",
-      senderName: senderRow[0]?.name ?? null,
+      personEmail: personRow[0]?.email ?? "unknown",
+      personName: personRow[0]?.name ?? null,
       totalSteps: emailRows.length,
       sentSteps: emailRows.filter((e) => e.status === "sent").length,
     });

@@ -6,7 +6,7 @@ import { schema } from "../db/schema";
 import { sequenceEmails } from "../db/sequence-emails.schema";
 import { sequenceEnrollments } from "../db/sequence-enrollments.schema";
 import { emailTemplates } from "../db/email-templates.schema";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { sentEmails } from "../db/sent-emails.schema";
 import { interpolate } from "./interpolate";
 
@@ -130,14 +130,14 @@ async function processSequenceEmail(
 
   const template = templateRows[0];
 
-  // Fetch sender for auto-variables
-  const senderRows = await db
+  // Fetch person for auto-variables
+  const personRows = await db
     .select()
-    .from(senders)
-    .where(eq(senders.id, enrollment.senderId))
+    .from(people)
+    .where(eq(people.id, enrollment.personId))
     .limit(1);
 
-  if (senderRows.length === 0) {
+  if (personRows.length === 0) {
     await db
       .update(sequenceEmails)
       .set({ status: "failed" })
@@ -145,13 +145,13 @@ async function processSequenceEmail(
     return;
   }
 
-  const sender = senderRows[0];
+  const person = personRows[0];
 
-  // Merge variables: sender auto-vars + enrollment custom vars (custom wins)
+  // Merge variables: person auto-vars + enrollment custom vars (custom wins)
   const customVars: Record<string, string> = JSON.parse(enrollment.variables);
   const mergedVars: Record<string, string> = {
-    name: sender.name ?? "",
-    email: sender.email,
+    name: person.name ?? "",
+    email: person.email,
     ...customVars,
   };
 
@@ -162,7 +162,7 @@ async function processSequenceEmail(
   // Send via Resend
   const result = await resend.emails.send({
     from: fromAddress,
-    to: sender.email,
+    to: person.email,
     subject: renderedSubject,
     html: renderedHtml,
   });
@@ -171,9 +171,9 @@ async function processSequenceEmail(
   const sentId = nanoid();
   await db.insert(sentEmails).values({
     id: sentId,
-    senderId: sender.id,
+    personId: person.id,
     fromAddress,
-    toAddress: sender.email,
+    toAddress: person.email,
     subject: renderedSubject,
     bodyHtml: renderedHtml,
     bodyText: null,

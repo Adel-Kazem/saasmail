@@ -4,7 +4,7 @@ import {
   applyMigrations,
   cleanDb,
   createTestUser,
-  createTestSender,
+  createTestPerson,
   createTestEmail,
   authFetch,
   getDb,
@@ -25,8 +25,8 @@ describe("attachments router", () => {
 
   async function createTestAttachment() {
     const db = getDb();
-    await createTestSender({ id: "s1", email: "a@test.com" });
-    await createTestEmail({ id: "e1", senderId: "s1" });
+    await createTestPerson({ id: "s1", email: "a@test.com" });
+    await createTestEmail({ id: "e1", personId: "s1" });
 
     const content = new TextEncoder().encode("Hello PDF");
     const r2Key = "attachments/e1/test.pdf";
@@ -65,8 +65,8 @@ describe("attachments router", () => {
 
     it("returns 404 when R2 object missing", async () => {
       const db = getDb();
-      await createTestSender({ id: "s1", email: "a@test.com" });
-      await createTestEmail({ id: "e1", senderId: "s1" });
+      await createTestPerson({ id: "s1", email: "a@test.com" });
+      await createTestEmail({ id: "e1", personId: "s1" });
 
       await db.insert(attachments).values({
         id: "att-orphan",

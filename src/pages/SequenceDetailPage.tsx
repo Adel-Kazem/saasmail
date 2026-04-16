@@ -112,10 +112,10 @@ export default function SequenceDetailPage() {
               >
                 <div>
                   <p className="text-sm font-medium text-text-primary">
-                    {enr.senderName ?? enr.senderEmail}
+                    {enr.personName ?? enr.personEmail}
                   </p>
                   <p className="text-xs text-text-secondary">
-                    {enr.senderEmail} &middot; {enr.sentSteps}/{enr.totalSteps}{" "}
+                    {enr.personEmail} &middot; {enr.sentSteps}/{enr.totalSteps}{" "}
                     sent
                   </p>
                 </div>

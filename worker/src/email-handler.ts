@@ -2,11 +2,11 @@ import { drizzle } from "drizzle-orm/d1";
 import { eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { schema } from "./db/schema";
-import { senders } from "./db/senders.schema";
+import { people } from "./db/people.schema";
 import { emails } from "./db/emails.schema";
 import { attachments } from "./db/attachments.schema";
 import { parseEmail } from "./lib/email-parser";
-import { cancelSequencesForSender } from "./lib/cancel-sequence";
+import { cancelSequencesForPerson } from "./lib/cancel-sequence";
 
 export async function handleEmail(
   message: ForwardableEmailMessage,
@@ -30,12 +30,12 @@ export async function handleEmail(
     }
   }
 
-  // Upsert sender
-  const senderId = nanoid();
+  // Upsert person
+  const personId = nanoid();
   await db
-    .insert(senders)
+    .insert(people)
     .values({
-      id: senderId,
+      id: personId,
       email: parsed.from.address,
       name: parsed.from.name || null,
       lastEmailAt: now,
@@ -45,23 +45,23 @@ export async function handleEmail(
       updatedAt: now,
     })
     .onConflictDoUpdate({
-      target: senders.email,
+      target: people.email,
       set: {
-        name: sql`COALESCE(${parsed.from.name || null}, ${senders.name})`,
+        name: sql`COALESCE(${parsed.from.name || null}, ${people.name})`,
         lastEmailAt: now,
-        unreadCount: sql`${senders.unreadCount} + 1`,
-        totalCount: sql`${senders.totalCount} + 1`,
+        unreadCount: sql`${people.unreadCount} + 1`,
+        totalCount: sql`${people.totalCount} + 1`,
         updatedAt: now,
       },
     });
 
-  // Get the actual sender ID (could be existing)
-  const senderRow = await db
-    .select({ id: senders.id })
-    .from(senders)
-    .where(eq(senders.email, parsed.from.address))
+  // Get the actual person ID (could be existing)
+  const personRow = await db
+    .select({ id: people.id })
+    .from(people)
+    .where(eq(people.email, parsed.from.address))
     .limit(1);
-  const actualSenderId = senderRow[0]!.id;
+  const actualPersonId = personRow[0]!.id;
 
   // Process attachments first (need IDs for CID rewriting)
   const cidMap: Record<string, string> = {};
@@ -106,7 +106,7 @@ export async function handleEmail(
   // Insert email (with rewritten HTML)
   await db.insert(emails).values({
     id: emailId,
-    senderId: actualSenderId,
+    personId: actualPersonId,
     recipient: parsed.to,
     subject: parsed.subject,
     bodyHtml,
@@ -118,8 +118,8 @@ export async function handleEmail(
     createdAt: now,
   });
 
-  // Cancel any active sequences for this sender
-  await cancelSequencesForSender(db, actualSenderId);
+  // Cancel any active sequences for this person
+  await cancelSequencesForPerson(db, actualPersonId);
 
   console.log(
     `Processed email from ${parsed.from.address} to ${parsed.to} (${parsed.attachments.length} attachments)`,

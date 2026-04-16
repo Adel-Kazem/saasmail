@@ -2,34 +2,34 @@ import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import {
-  fetchGroupedSenders,
-  fetchSenders,
-  type GroupedSender,
-  type Sender,
+  fetchGroupedPeople,
+  fetchPeople,
+  type GroupedPerson,
+  type Person,
 } from "@/lib/api";
 
 const PAGE_SIZE = 50;
 
-interface SenderListProps {
-  selectedSenderId: string | null;
+interface PersonListProps {
+  selectedPersonId: string | null;
   selectedRecipient: string | null;
-  onSelectSender: (sender: Sender) => void;
+  onSelectPerson: (person: Person) => void;
 }
 
-export default function SenderList({
-  selectedSenderId,
+export default function PersonList({
+  selectedPersonId,
   selectedRecipient,
-  onSelectSender,
-}: SenderListProps) {
-  // Level 1: grouped senders
-  const [groupedSenders, setGroupedSenders] = useState<GroupedSender[]>([]);
+  onSelectPerson,
+}: PersonListProps) {
+  // Level 1: grouped people
+  const [groupedPeople, setGroupedPeople] = useState<GroupedPerson[]>([]);
   const [groupedTotal, setGroupedTotal] = useState(0);
   const [groupedPage, setGroupedPage] = useState(1);
   const [groupedLoading, setGroupedLoading] = useState(true);
 
-  // Level 2: threads for a selected sender
-  const [activeSender, setActiveSender] = useState<GroupedSender | null>(null);
-  const [threads, setThreads] = useState<Sender[]>([]);
+  // Level 2: threads for a selected person
+  const [activePerson, setActivePerson] = useState<GroupedPerson | null>(null);
+  const [threads, setThreads] = useState<Person[]>([]);
   const [threadsTotal, setThreadsTotal] = useState(0);
   const [threadsPage, setThreadsPage] = useState(1);
   const [threadsLoading, setThreadsLoading] = useState(false);
@@ -45,31 +45,31 @@ export default function SenderList({
     setThreadsPage(1);
   }, [search]);
 
-  // Fetch grouped senders (level 1)
+  // Fetch grouped people (level 1)
   useEffect(() => {
-    if (activeSender) return; // don't refetch when drilling down
+    if (activePerson) return; // don't refetch when drilling down
     setGroupedLoading(true);
     const timeout = setTimeout(() => {
-      fetchGroupedSenders({
+      fetchGroupedPeople({
         q: search || undefined,
         page: groupedPage,
         limit: PAGE_SIZE,
       })
         .then((result) => {
-          setGroupedSenders(result.data);
+          setGroupedPeople(result.data);
           setGroupedTotal(result.total);
         })
         .finally(() => setGroupedLoading(false));
     }, 200);
     return () => clearTimeout(timeout);
-  }, [search, groupedPage, activeSender]);
+  }, [search, groupedPage, activePerson]);
 
-  // Fetch threads for active sender (level 2)
+  // Fetch threads for active person (level 2)
   useEffect(() => {
-    if (!activeSender) return;
+    if (!activePerson) return;
     setThreadsLoading(true);
-    fetchSenders({
-      senderId: activeSender.id,
+    fetchPeople({
+      personId: activePerson.id,
       page: threadsPage,
       limit: PAGE_SIZE,
     })
@@ -78,15 +78,15 @@ export default function SenderList({
         setThreadsTotal(result.total);
       })
       .finally(() => setThreadsLoading(false));
-  }, [activeSender, threadsPage]);
+  }, [activePerson, threadsPage]);
 
-  function handleSelectSender(gs: GroupedSender) {
-    setActiveSender(gs);
+  function handleSelectPerson(gp: GroupedPerson) {
+    setActivePerson(gp);
     setThreadsPage(1);
   }
 
   function handleBack() {
-    setActiveSender(null);
+    setActivePerson(null);
     setThreads([]);
     setThreadsPage(1);
   }
@@ -104,25 +104,25 @@ export default function SenderList({
   }
 
   // Level 2: threads view
-  if (activeSender) {
+  if (activePerson) {
     return (
       <div className="flex h-full flex-col">
-        {/* Back button + sender info */}
+        {/* Back button + person info */}
         <div className="border-b border-border-dark p-3">
           <button
             onClick={handleBack}
             className="mb-2 flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary"
           >
             <ArrowLeft size={14} />
-            All senders
+            All people
           </button>
           <div>
             <p className="truncate text-xs font-semibold text-text-primary">
-              {activeSender.name || activeSender.email}
+              {activePerson.name || activePerson.email}
             </p>
-            {activeSender.name && (
+            {activePerson.name && (
               <p className="truncate text-[11px] text-text-tertiary">
-                {activeSender.email}
+                {activePerson.email}
               </p>
             )}
           </div>
@@ -141,9 +141,9 @@ export default function SenderList({
             threads.map((thread) => (
               <button
                 key={`${thread.id}:${thread.recipient}`}
-                onClick={() => onSelectSender(thread)}
+                onClick={() => onSelectPerson(thread)}
                 className={`w-full border-b border-border-dark px-4 py-2.5 text-left transition-colors hover:bg-hover ${
-                  selectedSenderId === thread.id &&
+                  selectedPersonId === thread.id &&
                   selectedRecipient === thread.recipient
                     ? "bg-hover"
                     : ""
@@ -205,13 +205,13 @@ export default function SenderList({
     );
   }
 
-  // Level 1: grouped senders view
+  // Level 1: grouped people view
   return (
     <div className="flex h-full flex-col">
       <div className="space-y-2 p-3">
         <input
           type="text"
-          placeholder="Search senders..."
+          placeholder="Search people..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="h-8 w-full rounded-md border border-border-dark bg-input-bg px-3 text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent"
@@ -222,48 +222,48 @@ export default function SenderList({
           <p className="p-4 text-center text-xs text-text-tertiary">
             Loading...
           </p>
-        ) : groupedSenders.length === 0 ? (
+        ) : groupedPeople.length === 0 ? (
           <p className="p-4 text-center text-xs text-text-tertiary">
-            No senders found
+            No people found
           </p>
         ) : (
-          groupedSenders.map((gs) => (
+          groupedPeople.map((gp) => (
             <button
-              key={gs.id}
-              onClick={() => handleSelectSender(gs)}
+              key={gp.id}
+              onClick={() => handleSelectPerson(gp)}
               className={`w-full border-b border-border-dark px-4 py-2.5 text-left transition-colors hover:bg-hover ${
-                activeSender?.id === gs.id ? "bg-hover" : ""
+                activePerson?.id === gp.id ? "bg-hover" : ""
               }`}
             >
               <div className="flex items-center justify-between">
                 <span
                   className={`truncate text-xs ${
-                    gs.unreadCount > 0
+                    gp.unreadCount > 0
                       ? "font-semibold text-text-primary"
                       : "text-text-secondary"
                   }`}
                 >
-                  {gs.name || gs.email}
+                  {gp.name || gp.email}
                 </span>
                 <span className="ml-2 shrink-0 text-[11px] text-text-tertiary">
-                  {formatTime(gs.lastEmailAt)}
+                  {formatTime(gp.lastEmailAt)}
                 </span>
               </div>
-              {gs.name && (
+              {gp.name && (
                 <div className="truncate text-[11px] text-text-tertiary">
-                  {gs.email}
+                  {gp.email}
                 </div>
               )}
               <div className="mt-0.5 flex items-center justify-between">
                 <span className="truncate text-[11px] text-text-tertiary">
-                  {gs.recipientCount} address
-                  {gs.recipientCount !== 1 ? "es" : ""}
+                  {gp.recipientCount} address
+                  {gp.recipientCount !== 1 ? "es" : ""}
                   {" · "}
-                  {gs.totalCount} email{gs.totalCount !== 1 ? "s" : ""}
+                  {gp.totalCount} email{gp.totalCount !== 1 ? "s" : ""}
                 </span>
-                {gs.unreadCount > 0 && (
+                {gp.unreadCount > 0 && (
                   <span className="ml-2 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-unread px-1 text-[10px] font-semibold text-white">
-                    {gs.unreadCount}
+                    {gp.unreadCount}
                   </span>
                 )}
               </div>

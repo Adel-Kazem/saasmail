@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { Resend } from "resend";
 import { emailTemplates } from "../db/email-templates.schema";
 import { sentEmails } from "../db/sent-emails.schema";
-import { senders } from "../db/senders.schema";
+import { people } from "../db/people.schema";
 import { json200Response, json201Response } from "../lib/helpers";
 import { interpolate, extractVariables } from "../lib/interpolate";
 import type { Variables } from "../variables";
@@ -326,21 +326,21 @@ emailTemplatesRouter.openapi(sendTemplateRoute, async (c) => {
     html: renderedHtml,
   });
 
-  // Find sender if they exist
-  const existingSender = await db
-    .select({ id: senders.id })
-    .from(senders)
-    .where(eq(senders.email, to))
+  // Find person if they exist
+  const existingPerson = await db
+    .select({ id: people.id })
+    .from(people)
+    .where(eq(people.email, to))
     .limit(1);
 
-  const senderId = existingSender[0]?.id ?? null;
+  const personId = existingPerson[0]?.id ?? null;
 
   // Store sent email
   const id = nanoid();
   const now = Math.floor(Date.now() / 1000);
   await db.insert(sentEmails).values({
     id,
-    senderId,
+    personId,
     fromAddress,
     toAddress: to,
     subject: renderedSubject,

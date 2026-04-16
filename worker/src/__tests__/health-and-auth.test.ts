@@ -25,18 +25,18 @@ describe("auth middleware", () => {
   });
 
   it("returns 401 for unauthenticated API requests", async () => {
-    const res = await exports.default.fetch("http://localhost/api/senders");
+    const res = await exports.default.fetch("http://localhost/api/people");
     expect(res.status).toBe(401);
   });
 
   it("allows requests with valid API key", async () => {
     const { apiKey } = await createTestUser();
-    const res = await authFetch("/api/senders", { apiKey });
+    const res = await authFetch("/api/people", { apiKey });
     expect(res.status).toBe(200);
   });
 
   it("rejects requests with invalid API key", async () => {
-    const res = await authFetch("/api/senders", {
+    const res = await authFetch("/api/people", {
       apiKey: "sk_00000000000000000000000000000000",
     });
     expect(res.status).toBe(401);
