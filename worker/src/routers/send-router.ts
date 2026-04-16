@@ -10,6 +10,7 @@ import { cancelSequencesForPerson } from "../lib/cancel-sequence";
 import { emailTemplates } from "../db/email-templates.schema";
 import { interpolate, extractVariables } from "../lib/interpolate";
 import type { Variables } from "../variables";
+import { formatFromAddress } from "../lib/format-from-address";
 
 export const sendRouter = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -57,8 +58,9 @@ sendRouter.openapi(sendEmailRoute, async (c) => {
 
   // Send via Resend
   const resend = new Resend(c.env.RESEND_API_KEY);
+  const formattedFrom = await formatFromAddress(db, fromAddress);
   const result = await resend.emails.send({
-    from: fromAddress,
+    from: formattedFrom,
     to,
     subject,
     html: bodyHtml,
@@ -218,8 +220,9 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
 
   // Send via Resend
   const resend = new Resend(c.env.RESEND_API_KEY);
+  const formattedFrom = await formatFromAddress(db, fromAddress);
   const result = await resend.emails.send({
-    from: fromAddress,
+    from: formattedFrom,
     to: toAddress,
     subject: finalSubject,
     html: finalBodyHtml,

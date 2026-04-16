@@ -9,6 +9,7 @@ import { emailTemplates } from "../db/email-templates.schema";
 import { people } from "../db/people.schema";
 import { sentEmails } from "../db/sent-emails.schema";
 import { interpolate } from "./interpolate";
+import { formatFromAddress } from "./format-from-address";
 
 export interface SequenceEmailMessage {
   sequenceEmailId: string;
@@ -160,8 +161,9 @@ async function processSequenceEmail(
   const renderedHtml = interpolate(template.bodyHtml, mergedVars);
 
   // Send via Resend
+  const formattedFrom = await formatFromAddress(db, fromAddress);
   const result = await resend.emails.send({
-    from: fromAddress,
+    from: formattedFrom,
     to: person.email,
     subject: renderedSubject,
     html: renderedHtml,
