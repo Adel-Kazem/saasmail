@@ -195,19 +195,89 @@ export default function SequenceEditorPage() {
           </h2>
           <p className="mb-2 text-xs text-text-secondary">
             Use this endpoint to programmatically enroll a sender into this
-            sequence:
+            sequence. Provide either{" "}
+            <code className="text-accent">senderId</code> (existing sender) or{" "}
+            <code className="text-accent">senderEmail</code> (looks up or
+            creates the sender automatically):
           </p>
           <pre className="overflow-x-auto rounded-lg border border-border-dark bg-main p-4 text-xs text-text-secondary">
-            {`curl -X POST ${window.location.origin}/api/sequences/${id}/enroll \\
+            {(() => {
+              const usedSlugs = steps.map((s) => s.templateSlug).filter(Boolean);
+              const usedTemplates = templates.filter((t) =>
+                usedSlugs.includes(t.slug),
+              );
+              const varSet = new Set<string>();
+              const varRegex = /\{\{(\w+)\}\}/g;
+              for (const t of usedTemplates) {
+                for (const src of [t.subject, t.bodyHtml]) {
+                  let m: RegExpExecArray | null;
+                  while ((m = varRegex.exec(src)) !== null) {
+                    varSet.add(m[1]);
+                  }
+                }
+              }
+              const varsObj =
+                varSet.size > 0
+                  ? Object.fromEntries(
+                      Array.from(varSet).map((v) => [v, `<${v.toUpperCase()}>`]),
+                    )
+                  : undefined;
+              const body = JSON.stringify(
+                {
+                  senderEmail: "<RECIPIENT_EMAIL>",
+                  fromAddress: "<YOUR_SENDING_ADDRESS>",
+                  ...(varsObj ? { variables: varsObj } : {}),
+                },
+                null,
+                2,
+              );
+              return `curl -X POST ${window.location.origin}/api/sequences/${id}/enroll \\
   -H "Authorization: Bearer <API_KEY>" \\
   -H "Content-Type: application/json" \\
-  -d '{
-  "senderId": "<SENDER_ID>",
-  "variables": { "name": "Alice" },
-  "skipSteps": [],
-  "delayOverrides": {}
-}'`}
+  -d '${body}'`;
+            })()}
           </pre>
+          {(() => {
+            const usedSlugs = steps.map((s) => s.templateSlug).filter(Boolean);
+            const usedTemplates = templates.filter((t) =>
+              usedSlugs.includes(t.slug),
+            );
+            const templateVars: { slug: string; name: string; vars: string[] }[] = [];
+            const varRegex = /\{\{(\w+)\}\}/g;
+            for (const t of usedTemplates) {
+              const vars = new Set<string>();
+              for (const src of [t.subject, t.bodyHtml]) {
+                let m: RegExpExecArray | null;
+                while ((m = varRegex.exec(src)) !== null) {
+                  vars.add(m[1]);
+                }
+              }
+              if (vars.size > 0) {
+                templateVars.push({ slug: t.slug, name: t.name, vars: Array.from(vars) });
+              }
+            }
+            if (templateVars.length === 0) return null;
+            return (
+              <div className="mt-3">
+                <p className="mb-1 text-xs font-medium text-text-secondary">
+                  Template variables
+                </p>
+                <ul className="space-y-1 text-xs text-text-tertiary">
+                  {templateVars.map((tv) => (
+                    <li key={tv.slug}>
+                      <span className="text-text-secondary">{tv.name}</span>
+                      {" — "}
+                      {tv.vars.map((v) => (
+                        <code key={v} className="mr-1 text-accent">
+                          {`{{${v}}}`}
+                        </code>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
