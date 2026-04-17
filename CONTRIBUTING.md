@@ -28,7 +28,7 @@ Thanks for your interest in contributing to cmail.
 
 - TypeScript strict mode
 - Follow existing patterns in the codebase
-- Tailwind CSS for styling (dark theme using the existing color tokens)
+- Tailwind CSS for styling (light theme using the existing color tokens)
 - Hono + Zod OpenAPI for backend routes
 - Drizzle ORM for database queries
 
