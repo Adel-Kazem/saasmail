@@ -1,2 +1,7 @@
 RESEND_API_KEY=re_xxxx
 BETTER_AUTH_SECRET=generate-a-random-secret
+
+# Local-only: relaxes passkey enforcement so you can log in with
+# email+password and hit the API without registering a WebAuthn
+# credential. Set to "true" for local dev; omit / leave blank in prod.
+DISABLE_PASSKEY_GATE=true

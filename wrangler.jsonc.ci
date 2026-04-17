@@ -54,6 +54,7 @@
     "TRUSTED_ORIGINS": "http://localhost:8080",
     "APP_NAME": "cmail",
     "APP_LOGO_LETTER": "c",
-    "COOKIE_PREFIX": "cmail"
+    "COOKIE_PREFIX": "cmail",
+    "DISABLE_PASSKEY_GATE": "true"
   }
 }

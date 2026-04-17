@@ -74,5 +74,8 @@
     "APP_NAME": "cmail",          // Displayed in page title, login, sidebar, etc.
     "APP_LOGO_LETTER": "c",       // Single character shown as the logo in sidebar/consent
     "COOKIE_PREFIX": "cmail"      // Prefix for better-auth session cookies
+    // DO NOT set DISABLE_PASSKEY_GATE in production. It's intended for local
+    // dev only (see .dev.vars.example) and turns off the server-side passkey
+    // requirement for /api/* when set to "true".
   }
 }

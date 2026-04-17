@@ -2,8 +2,10 @@ import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { apiKeys } from "../db/api-keys.schema";
+import { passkeys } from "../db/auth.schema";
 import { json200Response, json201Response } from "../lib/helpers";
 import { hashKey } from "../lib/crypto";
+import { isDevEnvironment } from "../lib/is-dev";
 import type { Variables } from "../variables";
 
 export const apiKeysRouter = new OpenAPIHono<{
@@ -74,6 +76,27 @@ const createKeyRoute = createRoute({
 apiKeysRouter.openapi(createKeyRoute, async (c) => {
   const db = c.get("db");
   const user = c.get("user");
+
+  // API keys are long-lived credentials, so issuance must be gated on the
+  // same passkey guarantee we enforce for session-cookie users. Otherwise a
+  // password-only user could mint a key and sidestep the passkey requirement
+  // entirely. Dev mode stays permissive for local testing.
+  if (!isDevEnvironment(c.env)) {
+    const pkRows = await db
+      .select({ id: passkeys.id })
+      .from(passkeys)
+      .where(eq(passkeys.userId, user.id))
+      .limit(1);
+    if (pkRows.length === 0) {
+      return c.json(
+        {
+          error: "Register a passkey before creating an API key.",
+          code: "PASSKEY_REQUIRED",
+        },
+        403,
+      ) as any;
+    }
+  }
 
   // Delete existing key if any
   await db.delete(apiKeys).where(eq(apiKeys.userId, user.id));

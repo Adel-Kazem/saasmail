@@ -27,6 +27,9 @@ import type { SequenceEmailMessage } from "./lib/sequence-processor";
 import type { Variables } from "./variables";
 import type { MiddlewareHandler } from "hono";
 import { injectAllowedInboxes } from "./middleware/inject-allowed-inboxes";
+import { requirePasskey } from "./middleware/require-passkey";
+import { passkeys } from "./db/auth.schema";
+import { isDevEnvironment } from "./lib/is-dev";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -38,6 +41,69 @@ app.use("*", injectDb);
 app.use("*", logger());
 app.use("*", cors({ origin: "*" }));
 
+// Paths that don't participate in our session/passkey/inbox pipeline.
+// (BetterAuth handles its own auth at /api/auth/*; setup/invites/health/config
+// are intentionally public.)
+function isUnauthenticatedPath(path: string): boolean {
+  return (
+    path.startsWith("/api/auth") ||
+    path.startsWith("/api/setup") ||
+    path.startsWith("/api/invites") ||
+    path === "/api/health" ||
+    path === "/api/config"
+  );
+}
+
+// Paths that require a session but are exempt from the passkey requirement.
+// Users must be able to check their own passkey status before they've
+// registered one (so the frontend can route them to /setup-passkey).
+function isPasskeyExemptPath(path: string): boolean {
+  return path === "/api/user/passkeys";
+}
+
+// Block email+password sign-in for users who have already registered a
+// passkey. Runs BEFORE the catch-all BetterAuth handler so we get first look
+// at the request. The body is read via a clone so BetterAuth can still parse
+// the original.
+app.post("/api/auth/sign-in/email", async (c, next) => {
+  if (isDevEnvironment(c.env)) return next();
+
+  let email: string | undefined;
+  try {
+    const body = (await c.req.raw.clone().json()) as { email?: string };
+    email = body.email?.toLowerCase();
+  } catch {
+    // Malformed body — let BetterAuth surface the error.
+    return next();
+  }
+  if (!email) return next();
+
+  const db = c.get("db");
+  const userRows = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  if (userRows.length === 0) return next();
+
+  const pkRows = await db
+    .select({ id: passkeys.id })
+    .from(passkeys)
+    .where(eq(passkeys.userId, userRows[0].id))
+    .limit(1);
+  if (pkRows.length > 0) {
+    return c.json(
+      {
+        error:
+          "Password sign-in is disabled for accounts with a registered passkey. Please sign in with your passkey.",
+        code: "PASSKEY_REQUIRED_FOR_SIGNIN",
+      },
+      403,
+    );
+  }
+  return next();
+});
+
 // BetterAuth handler
 app.all("/api/auth/*", (c) => {
   const auth = createAuth(c.env);
@@ -46,15 +112,7 @@ app.all("/api/auth/*", (c) => {
 
 // Session resolution for all API routes
 app.use("/api/*", async (c, next) => {
-  if (
-    c.req.path.startsWith("/api/auth") ||
-    c.req.path.startsWith("/api/setup") ||
-    c.req.path.startsWith("/api/invites") ||
-    c.req.path === "/api/health" ||
-    c.req.path === "/api/config"
-  ) {
-    return next();
-  }
+  if (isUnauthenticatedPath(c.req.path)) return next();
 
   // Try session cookie first
   const auth = createAuth(c.env);
@@ -63,6 +121,7 @@ app.use("/api/*", async (c, next) => {
   });
   if (session) {
     c.set("user", session.user);
+    c.set("authMethod", "session");
     return next();
   }
 
@@ -88,6 +147,7 @@ app.use("/api/*", async (c, next) => {
 
       if (userRows.length > 0) {
         c.set("user", userRows[0]);
+        c.set("authMethod", "apiKey");
         return next();
       }
     }
@@ -96,17 +156,17 @@ app.use("/api/*", async (c, next) => {
   return c.json({ error: "Unauthorized" }, 401);
 });
 
+// Enforce passkey registration for session-cookie users. Runs before
+// inbox-scoping so an unregistered user gets a consistent 403.
+app.use("/api/*", async (c, next) => {
+  if (isUnauthenticatedPath(c.req.path)) return next();
+  if (isPasskeyExemptPath(c.req.path)) return next();
+  return requirePasskey(c, next);
+});
+
 // Inject allowed inboxes for all authenticated API routes
 app.use("/api/*", async (c, next) => {
-  if (
-    c.req.path.startsWith("/api/auth") ||
-    c.req.path.startsWith("/api/setup") ||
-    c.req.path.startsWith("/api/invites") ||
-    c.req.path === "/api/health" ||
-    c.req.path === "/api/config"
-  ) {
-    return next();
-  }
+  if (isUnauthenticatedPath(c.req.path)) return next();
   return injectAllowedInboxes(c, next);
 });
 

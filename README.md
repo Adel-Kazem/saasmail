@@ -206,6 +206,7 @@ Local development secrets. Created from `.dev.vars.example`. This file is gitign
 
 - `RESEND_API_KEY` — Resend API key (if using Resend)
 - `BETTER_AUTH_SECRET` — Secret for session signing
+- `DISABLE_PASSKEY_GATE` — Local-only: set to `"true"` to skip the server-side passkey requirement so you can sign in with email+password during development. **Never set this in production.**
 
 ## Roadmap
 
