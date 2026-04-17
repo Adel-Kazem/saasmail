@@ -1,7 +1,8 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { eq, desc, like, and, sql } from "drizzle-orm";
+import { eq, desc, like, and, sql, inArray } from "drizzle-orm";
 import { emails } from "../db/emails.schema";
 import { sentEmails } from "../db/sent-emails.schema";
+import { senderIdentities } from "../db/sender-identities.schema";
 import { attachments } from "../db/attachments.schema";
 import { people } from "../db/people.schema";
 import { json200Response, escapeLike } from "../lib/helpers";
@@ -29,6 +30,17 @@ const EmailSchema = z.object({
   attachmentCount: z.number().optional(),
 });
 
+const InboxMetaSchema = z.object({
+  email: z.string(),
+  displayName: z.string().nullable(),
+  displayMode: z.enum(["thread", "chat"]),
+});
+
+const PersonEmailsResponseSchema = z.object({
+  emails: z.array(EmailSchema),
+  inboxes: z.array(InboxMetaSchema),
+});
+
 // List emails for a person (received + sent interleaved)
 const listPersonEmailsRoute = createRoute({
   method: "get",
@@ -49,7 +61,10 @@ const listPersonEmailsRoute = createRoute({
     }),
   },
   responses: {
-    ...json200Response(z.array(EmailSchema), "Emails for person"),
+    ...json200Response(
+      PersonEmailsResponseSchema,
+      "Emails + per-inbox metadata for person",
+    ),
   },
 });
 
@@ -196,7 +211,37 @@ emailsRouter.openapi(listPersonEmailsRoute, async (c) => {
     attachments: attachmentDetails[e.id] ?? [],
   }));
 
-  return c.json(result, 200);
+  // Collect distinct inbox addresses referenced by the returned emails.
+  const inboxAddrs = new Set<string>();
+  for (const e of result) {
+    if (e.type === "received" && e.recipient) inboxAddrs.add(e.recipient);
+    if (e.type === "sent" && e.fromAddress) inboxAddrs.add(e.fromAddress);
+  }
+  const addrList = [...inboxAddrs];
+
+  const identities =
+    addrList.length > 0
+      ? await db
+          .select({
+            email: senderIdentities.email,
+            displayName: senderIdentities.displayName,
+            displayMode: senderIdentities.displayMode,
+          })
+          .from(senderIdentities)
+          .where(inArray(senderIdentities.email, addrList))
+      : [];
+  const identityMap = new Map(identities.map((r) => [r.email, r]));
+
+  const inboxesMeta = addrList.map((email) => {
+    const id = identityMap.get(email);
+    return {
+      email,
+      displayName: id?.displayName ?? null,
+      displayMode: (id?.displayMode ?? "thread") as "thread" | "chat",
+    };
+  });
+
+  return c.json({ emails: result, inboxes: inboxesMeta }, 200);
 });
 
 // Get single email detail

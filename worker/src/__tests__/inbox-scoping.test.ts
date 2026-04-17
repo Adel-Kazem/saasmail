@@ -105,8 +105,11 @@ describe("emails scoping", () => {
     });
     await grantInbox(userId, "a@x.com");
     const res = await authFetch("/api/emails/by-person/p1", { apiKey });
-    const body = (await res.json()) as Array<{ recipient: string }>;
-    const recipients = body.map((e) => e.recipient);
+    const body = (await res.json()) as {
+      emails: Array<{ recipient: string }>;
+      inboxes: any[];
+    };
+    const recipients = body.emails.map((e) => e.recipient);
     expect(recipients).toEqual(["a@x.com"]);
   });
 

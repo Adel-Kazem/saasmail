@@ -9,6 +9,7 @@ import {
   getDb,
 } from "./helpers";
 import { sentEmails } from "../db/sent-emails.schema";
+import { senderIdentities } from "../db/sender-identities.schema";
 import { people } from "../db/people.schema";
 import { emails } from "../db/emails.schema";
 import { eq } from "drizzle-orm";
@@ -50,7 +51,8 @@ describe("emails router", () => {
         apiKey,
       });
       expect(res.status).toBe(200);
-      const data = await res.json();
+      const body = (await res.json()) as { emails: any[]; inboxes: any[] };
+      const data = body.emails;
       expect(data).toHaveLength(2);
       // Most recent first — sent email has higher timestamp
       expect(data[0].type).toBe("sent");
@@ -87,7 +89,8 @@ describe("emails router", () => {
         { apiKey },
       );
       expect(res.status).toBe(200);
-      const data = await res.json();
+      const body = (await res.json()) as { emails: any[]; inboxes: any[] };
+      const data = body.emails;
       expect(data).toHaveLength(2);
       expect(data[0].type).toBe("sent");
       expect(data[1].type).toBe("received");
@@ -107,7 +110,8 @@ describe("emails router", () => {
       const res = await authFetch("/api/emails/by-person/s1?limit=2&page=1", {
         apiKey,
       });
-      const data = await res.json();
+      const body = (await res.json()) as { emails: any[]; inboxes: any[] };
+      const data = body.emails;
       expect(data).toHaveLength(2);
     });
 
@@ -128,9 +132,58 @@ describe("emails router", () => {
       const res = await authFetch("/api/emails/by-person/s1?q=Important", {
         apiKey,
       });
-      const data = await res.json();
+      const body = (await res.json()) as { emails: any[]; inboxes: any[] };
+      const data = body.emails;
       expect(data).toHaveLength(1);
       expect(data[0].subject).toBe("Important Meeting");
+    });
+
+    it("returns inboxes[] with displayMode for each inbox referenced by emails", async () => {
+      const db = getDb();
+      await createTestPerson({ id: "s1", email: "a@test.com" });
+      await createTestEmail({
+        id: "e1",
+        personId: "s1",
+        recipient: "support@cmail.test",
+      });
+
+      const now = Math.floor(Date.now() / 1000);
+      await db.insert(sentEmails).values({
+        id: "se1",
+        personId: "s1",
+        fromAddress: "sales@cmail.test",
+        toAddress: "a@test.com",
+        subject: "Hi",
+        bodyHtml: "<p>Hi</p>",
+        bodyText: null,
+        resendId: null,
+        status: "sent",
+        sentAt: now + 10,
+        createdAt: now + 10,
+      });
+
+      // Set support@ to chat mode; sales@ has no row → defaults to thread.
+      await db.insert(senderIdentities).values({
+        email: "support@cmail.test",
+        displayName: null,
+        displayMode: "chat",
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const res = await authFetch("/api/emails/by-person/s1", { apiKey });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        emails: any[];
+        inboxes: Array<{
+          email: string;
+          displayName: string | null;
+          displayMode: "thread" | "chat";
+        }>;
+      };
+      const byEmail = Object.fromEntries(body.inboxes.map((i) => [i.email, i]));
+      expect(byEmail["support@cmail.test"]?.displayMode).toBe("chat");
+      expect(byEmail["sales@cmail.test"]?.displayMode).toBe("thread");
     });
   });
 
