@@ -12,10 +12,11 @@ import {
 } from "@/lib/api";
 import EnrollSequenceModal from "@/components/EnrollSequenceModal";
 import SequenceStatus from "@/components/SequenceStatus";
-import MessageBubble from "@/components/MessageBubble";
 import EmailHtmlModal from "@/components/EmailHtmlModal";
 import ReplyComposer from "@/components/ReplyComposer";
-import { MessageSquare, Inbox } from "lucide-react";
+import ThreadInboxSection, {
+  type ThreadInboxGroup,
+} from "@/components/ThreadInboxSection";
 
 interface PersonDetailProps {
   person: GroupedPerson;
@@ -31,13 +32,7 @@ function inboxOf(email: Email): string {
   );
 }
 
-interface InboxGroup {
-  inbox: string;
-  emails: Email[]; // newest first
-  latestTimestamp: number;
-}
-
-function groupEmailsByInbox(emails: Email[]): InboxGroup[] {
+function groupEmailsByInbox(emails: Email[]): ThreadInboxGroup[] {
   const byInbox = new Map<string, Email[]>();
   for (const email of emails) {
     const key = inboxOf(email);
@@ -45,7 +40,7 @@ function groupEmailsByInbox(emails: Email[]): InboxGroup[] {
     if (list) list.push(email);
     else byInbox.set(key, [email]);
   }
-  const groups: InboxGroup[] = [];
+  const groups: ThreadInboxGroup[] = [];
   for (const [inbox, list] of byInbox) {
     // Emails come newest-first from the API; keep that order within a group.
     groups.push({
@@ -190,74 +185,24 @@ export default function PersonDetail({ person }: PersonDetailProps) {
               No emails found.
             </p>
           ) : (
-            inboxGroups.map((group) => {
-              // Within a group, emails arrive newest-first. Show the latest
-              // expanded (HTML) and collapse older messages behind a toggle.
-              const latest = group.emails[0];
-              const olderChronological = group.emails.slice(1).reverse();
-              const isOlderExpanded = !!expandedOlder[group.inbox];
-              return (
-                <section
-                  key={group.inbox}
-                  className="border-b-4 border-border-subtle"
-                >
-                  <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-bg-subtle px-4 sm:px-6 py-2">
-                    <Inbox size={12} className="text-text-tertiary" />
-                    <span className="text-[11px] font-medium text-text-secondary">
-                      {group.inbox}
-                    </span>
-                    <span className="text-[11px] text-text-tertiary">
-                      · {group.emails.length} email
-                      {group.emails.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div className="divide-y divide-border-subtle">
-                    {olderChronological.length > 0 && (
-                      <div className="px-4 sm:px-6 py-2">
-                        <button
-                          onClick={() =>
-                            setExpandedOlder((prev) => ({
-                              ...prev,
-                              [group.inbox]: !prev[group.inbox],
-                            }))
-                          }
-                          className="flex items-center gap-1.5 text-xs text-accent hover:underline"
-                        >
-                          <MessageSquare size={12} />
-                          {isOlderExpanded ? "Hide" : "Show"}{" "}
-                          {olderChronological.length} previous message
-                          {olderChronological.length !== 1 ? "s" : ""}
-                        </button>
-                      </div>
-                    )}
-                    {isOlderExpanded &&
-                      olderChronological.map((email) => (
-                        <MessageBubble
-                          key={email.id}
-                          email={email}
-                          personEmail={person.email}
-                          onOpenHtml={setHtmlPreviewEmail}
-                          onMarkRead={handleMarkRead}
-                          onReply={setReplyToEmailId}
-                          onDelete={handleDelete}
-                        />
-                      ))}
-                    {latest && (
-                      <MessageBubble
-                        key={latest.id}
-                        email={latest}
-                        personEmail={person.email}
-                        onOpenHtml={setHtmlPreviewEmail}
-                        onMarkRead={handleMarkRead}
-                        onReply={setReplyToEmailId}
-                        onDelete={handleDelete}
-                        renderHtml
-                      />
-                    )}
-                  </div>
-                </section>
-              );
-            })
+            inboxGroups.map((group) => (
+              <ThreadInboxSection
+                key={group.inbox}
+                group={group}
+                personEmail={person.email}
+                isOlderExpanded={!!expandedOlder[group.inbox]}
+                onToggleOlder={() =>
+                  setExpandedOlder((prev) => ({
+                    ...prev,
+                    [group.inbox]: !prev[group.inbox],
+                  }))
+                }
+                onOpenHtml={setHtmlPreviewEmail}
+                onMarkRead={handleMarkRead}
+                onReply={setReplyToEmailId}
+                onDelete={handleDelete}
+              />
+            ))
           )}
           <div ref={bottomRef} />
         </ScrollArea>
