@@ -62,7 +62,7 @@ export default function InviteAcceptPage() {
         setError("Account created but sign-in failed. Please go to login.");
         return;
       }
-      window.location.href = "/setup-passkey";
+      window.location.href = import.meta.env.DEV ? "/" : "/setup-passkey";
     } catch (err: any) {
       setError(err?.message || "Failed to accept invitation");
     } finally {

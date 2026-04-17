@@ -58,7 +58,9 @@ function AuthGuard() {
     return <Navigate to="/login" replace />;
   }
 
-  if (!passkeyStatus) {
+  // In local development, skip the passkey requirement so maintainers can test
+  // without registering a passkey. Passkeys are still enforced in production.
+  if (!passkeyStatus && !import.meta.env.DEV) {
     return <Navigate to="/setup-passkey" replace />;
   }
 

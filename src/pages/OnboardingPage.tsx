@@ -54,7 +54,7 @@ export default function OnboardingPage() {
         navigate("/login", { replace: true });
         return;
       }
-      window.location.href = "/setup-passkey";
+      window.location.href = import.meta.env.DEV ? "/" : "/setup-passkey";
     } catch {
       setError("Setup failed");
     } finally {
