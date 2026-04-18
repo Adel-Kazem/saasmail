@@ -8,6 +8,10 @@ Self-hosted on Cloudflare Workers. Receive with **Cloudflare Email Workers**. Se
 
 <img alt="cmail" src="https://github.com/user-attachments/assets/1b1f9408-c5d5-46c9-a790-e3743533aedc" />
 
+## Sponsors
+
+<a href="https://givefeedback.dev/saas"><img width="200" height="44" alt="givefeedback.dev" src="https://github.com/user-attachments/assets/7da9ef06-cc47-4aa5-94b1-2108a302439c" /></a>GiveFeedback.dev uses AI to turn client screen recordings into actionable tasks and prevent scope creep.
+
 ## Demo Video
 
 https://github.com/user-attachments/assets/fe3a3811-1902-4b0b-8b94-f8c72f1afab4
