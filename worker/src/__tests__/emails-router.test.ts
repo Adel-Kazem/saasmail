@@ -36,7 +36,7 @@ describe("emails router", () => {
       await db.insert(sentEmails).values({
         id: "se1",
         personId: "s1",
-        fromAddress: "me@cmail.test",
+        fromAddress: "me@saasmail.test",
         toAddress: "a@test.com",
         subject: "Reply",
         bodyHtml: "<p>Reply</p>",
@@ -65,14 +65,14 @@ describe("emails router", () => {
       await createTestEmail({
         id: "e1",
         personId: "s1",
-        recipient: "inbox@cmail.test",
+        recipient: "inbox@saasmail.test",
       });
 
       const now = Math.floor(Date.now() / 1000);
       await db.insert(sentEmails).values({
         id: "se1",
         personId: "s1",
-        fromAddress: "inbox@cmail.test",
+        fromAddress: "inbox@saasmail.test",
         toAddress: "a@test.com",
         subject: "Re: Test Subject",
         bodyHtml: "<p>Reply</p>",
@@ -85,7 +85,7 @@ describe("emails router", () => {
 
       // Filter by recipient (inbox address) — sent replies should still appear
       const res = await authFetch(
-        "/api/emails/by-person/s1?recipient=inbox@cmail.test",
+        "/api/emails/by-person/s1?recipient=inbox@saasmail.test",
         { apiKey },
       );
       expect(res.status).toBe(200);
@@ -144,14 +144,14 @@ describe("emails router", () => {
       await createTestEmail({
         id: "e1",
         personId: "s1",
-        recipient: "support@cmail.test",
+        recipient: "support@saasmail.test",
       });
 
       const now = Math.floor(Date.now() / 1000);
       await db.insert(sentEmails).values({
         id: "se1",
         personId: "s1",
-        fromAddress: "sales@cmail.test",
+        fromAddress: "sales@saasmail.test",
         toAddress: "a@test.com",
         subject: "Hi",
         bodyHtml: "<p>Hi</p>",
@@ -164,7 +164,7 @@ describe("emails router", () => {
 
       // Set support@ to chat mode; sales@ has no row → defaults to thread.
       await db.insert(senderIdentities).values({
-        email: "support@cmail.test",
+        email: "support@saasmail.test",
         displayName: null,
         displayMode: "chat",
         createdAt: now,
@@ -182,8 +182,8 @@ describe("emails router", () => {
         }>;
       };
       const byEmail = Object.fromEntries(body.inboxes.map((i) => [i.email, i]));
-      expect(byEmail["support@cmail.test"]?.displayMode).toBe("chat");
-      expect(byEmail["sales@cmail.test"]?.displayMode).toBe("thread");
+      expect(byEmail["support@saasmail.test"]?.displayMode).toBe("chat");
+      expect(byEmail["sales@saasmail.test"]?.displayMode).toBe("thread");
     });
   });
 

@@ -6,7 +6,7 @@ Every interaction with a customer matters, and context compounds. saasmail pulls
 
 Self-hosted on Cloudflare Workers. Receive with **Cloudflare Email Workers**. Send with **Cloudflare Email Sending** or **Resend**.
 
-<img alt="cmail" src="https://github.com/user-attachments/assets/1b1f9408-c5d5-46c9-a790-e3743533aedc" />
+<img alt="saasmail" src="https://github.com/user-attachments/assets/1b1f9408-c5d5-46c9-a790-e3743533aedc" />
 
 ## Sponsors
 
@@ -90,13 +90,13 @@ Issue scoped API keys for programmatic access to send email, manage templates, e
 - A [Cloudflare](https://dash.cloudflare.com/) account with Email Routing available for your domain
 - _Optional:_ a [Resend](https://resend.com/) account and API key (only if you prefer Resend over Cloudflare Email Sending)
 
-> **Tip:** If you have [Claude Code](https://claude.ai/claude-code) installed, you can run `/cmail-onboarding` to walk through the setup interactively.
+> **Tip:** If you have [Claude Code](https://claude.ai/claude-code) installed, you can run `/saasmail-onboarding` to walk through the setup interactively.
 
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/choyiny/cmail.git
-cd cmail
+git clone https://github.com/choyiny/saasmail.git
+cd saasmail
 yarn install
 ```
 

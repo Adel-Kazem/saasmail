@@ -1,4 +1,4 @@
-# cmail
+# saasmail
 
 Self-hosted email server on Cloudflare Workers. See README.md for full documentation.
 
@@ -13,4 +13,4 @@ Self-hosted email server on Cloudflare Workers. See README.md for full documenta
 
 ## Skills
 
-- `/cmail-onboarding` — Interactive setup wizard for deploying a new cmail instance
+- `/saasmail-onboarding` — Interactive setup wizard for deploying a new saasmail instance

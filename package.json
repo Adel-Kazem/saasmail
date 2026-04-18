@@ -1,5 +1,5 @@
 {
-  "name": "cmail",
+  "name": "saasmail",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,9 +9,9 @@
     "auth:generate": "npx @better-auth/cli@latest generate --config worker/src/auth/index.ts --output worker/src/db/auth.schema.ts -y",
     "auth:migrate": "npx @better-auth/cli@latest migrate --config worker/src/auth/index.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:dev": "wrangler d1 migrations apply cmail-db --local",
-    "db:migrate:prod": "wrangler d1 migrations apply cmail-db --remote",
-    "db:seed:dev": "wrangler d1 execute cmail-db --local --file=seeds/demo.sql",
+    "db:migrate:dev": "wrangler d1 migrations apply saasmail-db --local",
+    "db:migrate:prod": "wrangler d1 migrations apply saasmail-db --remote",
+    "db:seed:dev": "wrangler d1 execute saasmail-db --local --file=seeds/demo.sql",
     "db:studio:dev": "drizzle-kit studio",
     "db:studio:prod": "NODE_ENV=production drizzle-kit studio",
     "test": "vitest run --config vitest.config.test.ts",

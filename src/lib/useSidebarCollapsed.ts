@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "cmail:sidebar-collapsed";
+const STORAGE_KEY = "saasmail:sidebar-collapsed";
 
 function readStored(): boolean {
   if (typeof window === "undefined") return false;

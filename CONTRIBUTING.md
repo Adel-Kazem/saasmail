@@ -1,11 +1,11 @@
-# Contributing to cmail
+# Contributing to saasmail
 
-Thanks for your interest in contributing to cmail.
+Thanks for your interest in contributing to saasmail.
 
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/<your-username>/cmail.git`
+2. Clone your fork: `git clone https://github.com/<your-username>/saasmail.git`
 3. Install dependencies: `yarn install`
 4. Follow the [Local Development](README.md#local-development) section in the README to set up your environment
 

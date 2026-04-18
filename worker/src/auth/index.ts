@@ -21,7 +21,7 @@ export function createAuth(env?: CloudflareBindings) {
     },
     plugins: [admin(), openAPI(), passkey(), jwt()],
     advanced: {
-      cookiePrefix: env?.COOKIE_PREFIX || "cmail",
+      cookiePrefix: env?.COOKIE_PREFIX || "saasmail",
       defaultCookieAttributes: { sameSite: "lax", secure: true },
     },
     trustedOrigins: env?.TRUSTED_ORIGINS

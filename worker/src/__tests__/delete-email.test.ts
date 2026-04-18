@@ -119,7 +119,7 @@ describe("DELETE /api/emails/:id", () => {
     await db.insert(sentEmails).values({
       id: "se1",
       personId: "s1",
-      fromAddress: "me@cmail.test",
+      fromAddress: "me@saasmail.test",
       toAddress: "alice@example.com",
       subject: "Test",
       bodyHtml: "<p>Hi</p>",

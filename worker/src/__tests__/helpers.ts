@@ -153,7 +153,7 @@ export async function createTestEmail(
   const email = {
     id: opts.id ?? "email-1",
     personId: opts.personId ?? "sender-1",
-    recipient: opts.recipient ?? "inbox@cmail.test",
+    recipient: opts.recipient ?? "inbox@saasmail.test",
     subject: opts.subject ?? "Test Subject",
     bodyHtml: "<p>Hello</p>",
     bodyText: "Hello",

@@ -122,18 +122,21 @@ describe("people router", () => {
       await createTestEmail({
         id: "e1",
         personId: "s1",
-        recipient: "inbox@cmail.test",
+        recipient: "inbox@saasmail.test",
       });
       await createTestEmail({
         id: "e2",
         personId: "s2",
-        recipient: "other@cmail.test",
+        recipient: "other@saasmail.test",
         messageId: "msg-2@example.com",
       });
 
-      const res = await authFetch("/api/people?recipient=inbox%40cmail.test", {
-        apiKey,
-      });
+      const res = await authFetch(
+        "/api/people?recipient=inbox%40saasmail.test",
+        {
+          apiKey,
+        },
+      );
       const body = await res.json();
       expect(body.data).toHaveLength(1);
       expect(body.data[0].id).toBe("s1");

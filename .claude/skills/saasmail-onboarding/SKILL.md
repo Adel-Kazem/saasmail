@@ -1,11 +1,11 @@
 ---
-name: cmail-onboarding
-description: Interactive setup wizard for deploying your own cmail instance on Cloudflare Workers. Use this skill when the user wants to set up cmail, deploy it, configure Cloudflare resources, or get started with the project. Also trigger when the user says "onboarding", "setup", "deploy cmail", "get started", or asks how to install/configure cmail.
+name: saasmail-onboarding
+description: Interactive setup wizard for deploying your own saasmail instance on Cloudflare Workers. Use this skill when the user wants to set up saasmail, deploy it, configure Cloudflare resources, or get started with the project. Also trigger when the user says "onboarding", "setup", "deploy saasmail", "get started", or asks how to install/configure saasmail.
 ---
 
-# cmail Onboarding Wizard
+# saasmail Onboarding Wizard
 
-Walk the user through setting up their own cmail instance from scratch. This is an interactive, step-by-step process — explain each step, run commands, report results, and pause for user input when needed.
+Walk the user through setting up their own saasmail instance from scratch. This is an interactive, step-by-step process — explain each step, run commands, report results, and pause for user input when needed.
 
 ## Before You Start
 
@@ -46,7 +46,7 @@ Create each resource and capture the output. The user's Cloudflare account must 
 **D1 Database:**
 
 ```bash
-wrangler d1 create cmail-db
+wrangler d1 create saasmail-db
 ```
 
 Capture the `database_id` from the output.
@@ -54,13 +54,13 @@ Capture the `database_id` from the output.
 **R2 Bucket:**
 
 ```bash
-wrangler r2 bucket create cmail-attachments
+wrangler r2 bucket create saasmail-attachments
 ```
 
 **Queue:**
 
 ```bash
-wrangler queues create cmail-sequence-emails
+wrangler queues create saasmail-sequence-emails
 ```
 
 If any creation fails because the resource already exists, that's fine — just note it and move on.
@@ -122,7 +122,7 @@ yarn db:migrate:prod
 
 This step requires manual action in the Cloudflare dashboard. Instruct the user:
 
-> Go to the [Cloudflare dashboard](https://dash.cloudflare.com/), select your domain, then navigate to **Email > Email Routing > Routing Rules**. Add a catch-all rule that routes all incoming email to your cmail worker.
+> Go to the [Cloudflare dashboard](https://dash.cloudflare.com/), select your domain, then navigate to **Email > Email Routing > Routing Rules**. Add a catch-all rule that routes all incoming email to your saasmail worker.
 >
 > If you haven't set up email routing on this domain before, you'll need to add the required DNS records that Cloudflare prompts you to add.
 

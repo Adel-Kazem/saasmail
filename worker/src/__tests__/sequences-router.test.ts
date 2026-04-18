@@ -156,7 +156,10 @@ describe("sequences router", () => {
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({
+          personId: "s1",
+          fromAddress: "me@saasmail.test",
+        }),
       });
 
       const res = await authFetch(`/api/sequences/${seq.id}`, {
@@ -177,7 +180,7 @@ describe("sequences router", () => {
         method: "POST",
         body: JSON.stringify({
           personId: "s1",
-          fromAddress: "me@cmail.test",
+          fromAddress: "me@saasmail.test",
           variables: { customVar: "value" },
         }),
       });
@@ -195,7 +198,7 @@ describe("sequences router", () => {
         method: "POST",
         body: JSON.stringify({
           personId: "nonexistent",
-          fromAddress: "me@cmail.test",
+          fromAddress: "me@saasmail.test",
         }),
       });
       expect(res.status).toBe(404);
@@ -208,13 +211,19 @@ describe("sequences router", () => {
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({
+          personId: "s1",
+          fromAddress: "me@saasmail.test",
+        }),
       });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({
+          personId: "s1",
+          fromAddress: "me@saasmail.test",
+        }),
       });
       expect(res.status).toBe(400);
     });
@@ -228,7 +237,7 @@ describe("sequences router", () => {
         method: "POST",
         body: JSON.stringify({
           personId: "s1",
-          fromAddress: "me@cmail.test",
+          fromAddress: "me@saasmail.test",
           skipSteps: [2],
         }),
       });
@@ -247,7 +256,7 @@ describe("sequences router", () => {
         method: "POST",
         body: JSON.stringify({
           personId: "s1",
-          fromAddress: "me@cmail.test",
+          fromAddress: "me@saasmail.test",
           skipSteps: [1, 2],
         }),
       });
@@ -263,7 +272,7 @@ describe("sequences router", () => {
         method: "POST",
         body: JSON.stringify({
           personEmail: "a@test.com",
-          fromAddress: "me@cmail.test",
+          fromAddress: "me@saasmail.test",
         }),
       });
       expect(res.status).toBe(201);
@@ -279,7 +288,7 @@ describe("sequences router", () => {
         method: "POST",
         body: JSON.stringify({
           personEmail: "new-person@test.com",
-          fromAddress: "me@cmail.test",
+          fromAddress: "me@saasmail.test",
         }),
       });
       expect(res.status).toBe(201);
@@ -303,7 +312,7 @@ describe("sequences router", () => {
       const res = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({ fromAddress: "me@saasmail.test" }),
       });
       expect(res.status).toBe(400);
     });
@@ -317,7 +326,7 @@ describe("sequences router", () => {
         method: "POST",
         body: JSON.stringify({
           personId: "s1",
-          fromAddress: "me@cmail.test",
+          fromAddress: "me@saasmail.test",
           delayOverrides: { "2": 48 },
         }),
       });
@@ -353,7 +362,10 @@ describe("sequences router", () => {
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({
+          personId: "s1",
+          fromAddress: "me@saasmail.test",
+        }),
       });
 
       const res = await authFetch("/api/sequences/people/s1/enrollment", {
@@ -375,7 +387,10 @@ describe("sequences router", () => {
       const enrollRes = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({
+          personId: "s1",
+          fromAddress: "me@saasmail.test",
+        }),
       });
       const enrollData = await enrollRes.json();
 
@@ -411,7 +426,10 @@ describe("sequences router", () => {
       const enrollRes = await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({
+          personId: "s1",
+          fromAddress: "me@saasmail.test",
+        }),
       });
       const enrollData = await enrollRes.json();
 
@@ -438,7 +456,10 @@ describe("sequences router", () => {
       await authFetch(`/api/sequences/${seq.id}/enroll`, {
         apiKey,
         method: "POST",
-        body: JSON.stringify({ personId: "s1", fromAddress: "me@cmail.test" }),
+        body: JSON.stringify({
+          personId: "s1",
+          fromAddress: "me@saasmail.test",
+        }),
       });
 
       const res = await authFetch(`/api/sequences/${seq.id}/enrollments`, {

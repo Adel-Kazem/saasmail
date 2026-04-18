@@ -38,21 +38,21 @@ describe("stats router", () => {
         id: "e1",
         personId: "s1",
         isRead: 0,
-        recipient: "inbox@cmail.test",
+        recipient: "inbox@saasmail.test",
       });
       await createTestEmail({
         id: "e2",
         personId: "s2",
         isRead: 1,
         messageId: "msg-2@test.com",
-        recipient: "inbox@cmail.test",
+        recipient: "inbox@saasmail.test",
       });
       await createTestEmail({
         id: "e3",
         personId: "s1",
         isRead: 0,
         messageId: "msg-3@test.com",
-        recipient: "other@cmail.test",
+        recipient: "other@saasmail.test",
       });
 
       const res = await authFetch("/api/stats", { apiKey });
@@ -60,8 +60,8 @@ describe("stats router", () => {
       expect(data.totalPeople).toBe(2);
       expect(data.totalEmails).toBe(3);
       expect(data.unreadCount).toBe(2);
-      expect(data.recipients).toContain("inbox@cmail.test");
-      expect(data.recipients).toContain("other@cmail.test");
+      expect(data.recipients).toContain("inbox@saasmail.test");
+      expect(data.recipients).toContain("other@saasmail.test");
     });
 
     it("filters by recipient", async () => {
@@ -70,19 +70,22 @@ describe("stats router", () => {
         id: "e1",
         personId: "s1",
         isRead: 0,
-        recipient: "inbox@cmail.test",
+        recipient: "inbox@saasmail.test",
       });
       await createTestEmail({
         id: "e2",
         personId: "s1",
         isRead: 0,
         messageId: "msg-2@test.com",
-        recipient: "other@cmail.test",
+        recipient: "other@saasmail.test",
       });
 
-      const res = await authFetch("/api/stats?recipient=inbox%40cmail.test", {
-        apiKey,
-      });
+      const res = await authFetch(
+        "/api/stats?recipient=inbox%40saasmail.test",
+        {
+          apiKey,
+        },
+      );
       const data = await res.json();
       expect(data.totalEmails).toBe(1);
       expect(data.unreadCount).toBe(1);
