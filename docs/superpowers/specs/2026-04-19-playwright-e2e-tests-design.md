@@ -200,10 +200,10 @@ Each spec uses admin `storageState` unless noted.
 
 ### 9. `invites.spec.ts`
 
-- Admin creates invite for `member@e2e.test` → invite URL returned.
+- Admin creates invite for `invitee@e2e.test` → invite URL returned.
 - Open invite URL in a fresh context (no storageState) → signup form.
-- Complete signup → member lands on inbox.
-- Member only sees assigned inbox (other inbox hidden).
+- Complete signup → invitee lands on inbox.
+- Invitee only sees assigned inbox (other inbox hidden).
 
 ## Demo-mode verification points
 
