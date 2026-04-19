@@ -20,6 +20,7 @@ export const TEST_IDS = {
   // Sequences
   sequenceRow: "sequence-row",
   sequenceStepRow: "sequence-step-row",
+  enrollmentRow: "enrollment-row",
 
   // Display
   chatBubble: "chat-bubble",
