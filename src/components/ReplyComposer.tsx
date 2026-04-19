@@ -251,6 +251,7 @@ export default function ReplyComposer({
           <div className="ml-auto">
             <button
               onClick={handleSend}
+              data-testid="reply-send-button"
               disabled={sending}
               className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-hover disabled:opacity-50 transition-colors"
             >

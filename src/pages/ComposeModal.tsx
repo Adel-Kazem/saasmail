@@ -26,6 +26,9 @@ export default function ComposeModal({ open, onClose }: ComposeModalProps) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
+  // TipTap emits "<p></p>" for an empty editor — treat that as empty.
+  const bodyIsEmpty = !bodyHtml || bodyHtml === "<p></p>";
+
   useEffect(() => {
     if (open) {
       fetchStats().then((stats) => {
@@ -108,7 +111,9 @@ export default function ComposeModal({ open, onClose }: ComposeModalProps) {
             <label className="text-xs font-medium text-text-secondary">
               Message
             </label>
-            <TiptapEditor content={bodyHtml} onUpdate={setBodyHtml} />
+            <div data-testid="compose-body">
+              <TiptapEditor content={bodyHtml} onUpdate={setBodyHtml} />
+            </div>
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex justify-end gap-2">
@@ -121,7 +126,8 @@ export default function ComposeModal({ open, onClose }: ComposeModalProps) {
             </button>
             <button
               type="submit"
-              disabled={sending}
+              data-testid="compose-send-button"
+              disabled={sending || bodyIsEmpty}
               className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-hover disabled:opacity-50"
             >
               {sending ? "Sending..." : "Send"}

@@ -30,6 +30,9 @@ export const TEST_IDS = {
   composeSendButton: "compose-send-button",
   composeBody: "compose-body",
 
+  // Reply
+  replySendButton: "reply-send-button",
+
   // API keys
   apiKeyRow: "api-key-row",
   apiKeyRevealed: "api-key-revealed",
