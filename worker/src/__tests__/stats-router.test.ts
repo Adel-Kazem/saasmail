@@ -6,7 +6,9 @@ import {
   createTestPerson,
   createTestEmail,
   authFetch,
+  getDb,
 } from "./helpers";
+import { senderIdentities } from "../db/sender-identities.schema";
 
 describe("stats router", () => {
   let apiKey: string;
@@ -54,6 +56,23 @@ describe("stats router", () => {
         messageId: "msg-3@test.com",
         recipient: "other@saasmail.test",
       });
+      const now = Math.floor(Date.now() / 1000);
+      await getDb()
+        .insert(senderIdentities)
+        .values([
+          {
+            email: "inbox@saasmail.test",
+            displayName: null,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            email: "other@saasmail.test",
+            displayName: null,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ]);
 
       const res = await authFetch("/api/stats", { apiKey });
       const data = await res.json();
@@ -62,6 +81,30 @@ describe("stats router", () => {
       expect(data.unreadCount).toBe(2);
       expect(data.recipients).toContain("inbox@saasmail.test");
       expect(data.recipients).toContain("other@saasmail.test");
+    });
+
+    it("recipients comes from sender_identities, not received emails", async () => {
+      // Seed a received email for an inbox that is NOT in sender_identities.
+      await createTestPerson({ id: "s1", email: "a@test.com" });
+      await createTestEmail({
+        id: "e1",
+        personId: "s1",
+        recipient: "received-only@saasmail.test",
+      });
+      // And a sender_identity that has no received mail yet — e.g. freshly
+      // created via POST /api/admin/inboxes.
+      const now = Math.floor(Date.now() / 1000);
+      await getDb().insert(senderIdentities).values({
+        email: "created-only@saasmail.test",
+        displayName: "Fresh",
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const res = await authFetch("/api/stats", { apiKey });
+      const data = await res.json();
+      expect(data.recipients).toEqual(["created-only@saasmail.test"]);
+      expect(data.recipients).not.toContain("received-only@saasmail.test");
     });
 
     it("filters by recipient", async () => {

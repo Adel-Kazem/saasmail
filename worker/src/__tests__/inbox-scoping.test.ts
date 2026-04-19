@@ -11,6 +11,7 @@ import {
 } from "./helpers";
 import { emails } from "../db/emails.schema";
 import { inboxPermissions } from "../db/inbox-permissions.schema";
+import { senderIdentities } from "../db/sender-identities.schema";
 
 async function grantInbox(userId: string, email: string) {
   await getDb()
@@ -21,6 +22,16 @@ async function grantInbox(userId: string, email: string) {
       createdAt: Math.floor(Date.now() / 1000),
       createdBy: null,
     });
+}
+
+async function createInbox(email: string) {
+  const now = Math.floor(Date.now() / 1000);
+  await getDb().insert(senderIdentities).values({
+    email,
+    displayName: null,
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 beforeEach(async () => {
@@ -40,6 +51,8 @@ describe("stats scoping", () => {
       recipient: "b@x.com",
       messageId: "m2",
     });
+    await createInbox("a@x.com");
+    await createInbox("b@x.com");
     const res = await authFetch("/api/stats", { apiKey });
     const body = (await res.json()) as {
       totalEmails: number;
@@ -64,6 +77,8 @@ describe("stats scoping", () => {
       recipient: "b@x.com",
       messageId: "m2",
     });
+    await createInbox("a@x.com");
+    await createInbox("b@x.com");
     await grantInbox(userId, "a@x.com");
     const res = await authFetch("/api/stats", { apiKey });
     const body = (await res.json()) as {

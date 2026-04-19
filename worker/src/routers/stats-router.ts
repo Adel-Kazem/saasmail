@@ -77,12 +77,6 @@ statsRouter.openapi(statsRoute, async (c) => {
           : sql`${people.id} IN (SELECT person_id FROM ${emails} WHERE ${emails.recipient} IN ${allowed.inboxes})`,
     );
 
-  const recipientRows = await db
-    .select({ recipient: emails.recipient })
-    .from(emails)
-    .where(scopeFilter ?? sql`1=1`)
-    .groupBy(emails.recipient);
-
   const allIdentities = await db.select().from(senderIdentities);
   const identityRows = allowed.isAdmin
     ? allIdentities
@@ -93,7 +87,7 @@ statsRouter.openapi(statsRoute, async (c) => {
       totalPeople: personCountRow[0]?.count ?? 0,
       totalEmails,
       unreadCount,
-      recipients: recipientRows.map((r) => r.recipient),
+      recipients: identityRows.map((r) => r.email),
       senderIdentities: identityRows.map((r) => ({
         email: r.email,
         displayName: r.displayName,
