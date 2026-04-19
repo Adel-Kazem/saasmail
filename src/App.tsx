@@ -6,7 +6,7 @@ import {
   Outlet,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrandingProvider } from "@/lib/branding";
+import { BrandingProvider, useBranding } from "@/lib/branding";
 import { useSession } from "@/lib/auth-client";
 import { fetchPasskeyStatus } from "@/lib/api";
 import { useEffect, useState } from "react";
@@ -29,6 +29,7 @@ const queryClient = new QueryClient();
 
 function AuthGuard() {
   const { data: session, isPending } = useSession();
+  const { passkeyRequired, loaded: brandingLoaded } = useBranding();
   const [passkeyStatus, setPasskeyStatus] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -46,7 +47,11 @@ function AuthGuard() {
     };
   }, [session]);
 
-  if (isPending || (session && passkeyStatus === null)) {
+  if (
+    isPending ||
+    (session && passkeyStatus === null) ||
+    (session && !brandingLoaded)
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg">
         <p className="text-text-secondary">Loading...</p>
@@ -58,9 +63,10 @@ function AuthGuard() {
     return <Navigate to="/login" replace />;
   }
 
-  // In local development, skip the passkey requirement so maintainers can test
-  // without registering a passkey. Passkeys are still enforced in production.
-  if (!passkeyStatus && !import.meta.env.DEV) {
+  // Passkey enforcement is gated by the server (demo/dev deploys disable it).
+  // `passkeyRequired` reflects the backend's runtime decision so frontend and
+  // backend always agree.
+  if (!passkeyStatus && passkeyRequired) {
     return <Navigate to="/setup-passkey" replace />;
   }
 

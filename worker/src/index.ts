@@ -208,6 +208,7 @@ app.get("/api/config", (c) =>
   c.json({
     appName: c.env.APP_NAME || "saasmail",
     logoLetter: c.env.APP_LOGO_LETTER || "s",
+    passkeyRequired: !isDevEnvironment(c.env),
   }),
 );
 

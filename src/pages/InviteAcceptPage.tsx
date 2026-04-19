@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useBranding } from "@/lib/branding";
 
 export default function InviteAcceptPage() {
-  const { appName } = useBranding();
+  const { appName, passkeyRequired } = useBranding();
   const { token } = useParams<{ token: string }>();
   const [status, setStatus] = useState<"loading" | "valid" | "invalid">(
     "loading",
@@ -62,7 +62,7 @@ export default function InviteAcceptPage() {
         setError("Account created but sign-in failed. Please go to login.");
         return;
       }
-      window.location.href = import.meta.env.DEV ? "/" : "/setup-passkey";
+      window.location.href = passkeyRequired ? "/setup-passkey" : "/";
     } catch (err: any) {
       setError(err?.message || "Failed to accept invitation");
     } finally {

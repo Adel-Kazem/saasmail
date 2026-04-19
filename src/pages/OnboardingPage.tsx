@@ -8,7 +8,7 @@ type Status = "checking" | "available" | "unavailable";
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const { appName } = useBranding();
+  const { appName, passkeyRequired } = useBranding();
   const [status, setStatus] = useState<Status>("checking");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -54,7 +54,7 @@ export default function OnboardingPage() {
         navigate("/login", { replace: true });
         return;
       }
-      window.location.href = import.meta.env.DEV ? "/" : "/setup-passkey";
+      window.location.href = passkeyRequired ? "/setup-passkey" : "/";
     } catch {
       setError("Setup failed");
     } finally {
