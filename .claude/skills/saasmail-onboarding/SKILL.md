@@ -1,157 +1,236 @@
 ---
 name: saasmail-onboarding
-description: Interactive setup wizard for deploying your own saasmail instance on Cloudflare Workers. Use this skill when the user wants to set up saasmail, deploy it, configure Cloudflare resources, or get started with the project. Also trigger when the user says "onboarding", "setup", "deploy saasmail", "get started", or asks how to install/configure saasmail.
+description: Interactive setup wizard for deploying your own saasmail instance to Cloudflare. Use this skill when the user wants to set up saasmail, deploy it, configure Cloudflare resources, or get started with the project. Also trigger when the user says "onboarding", "setup", "deploy saasmail", "get started", or asks how to install/configure saasmail.
 ---
 
 # saasmail Onboarding Wizard
 
-Walk the user through setting up their own saasmail instance from scratch. This is an interactive, step-by-step process — explain each step, run commands, report results, and pause for user input when needed.
+Guide the user through deploying a production saasmail instance to **their Cloudflare account**. This wizard is deployment-only — it does not set up local development. Every step targets the user's live Cloudflare environment.
 
 ## Before You Start
 
-Read `wrangler.jsonc.example` and `.dev.vars.example` in the project root to understand what configuration is needed. These are your source of truth for what resources need to be created.
+Read `wrangler.jsonc.example` in the project root so you know the exact shape of the config that will be filled in. It is your source of truth for which resources and bindings are required.
 
-## Setup Steps
+## What the user is signing up for
 
-Work through these steps in order. After each step, confirm success before moving on. If something fails, help the user troubleshoot before continuing.
+Set expectations up front, so the user knows what they're committing to:
 
-### Step 1: Check Prerequisites
+- **~30–40 minutes** total; most of the wait is DNS propagation, not typing.
+- **Two decisions**: which domains will be used, and which outbound email provider (Cloudflare Email Sending or Resend).
+- **Three manual Cloudflare-dashboard steps** (Email Routing per inbound domain, Email Service per send-from domain, and checking the deployed worker).
+- **Cost**: a Cloudflare **Workers Paid plan (~$5/mo)** is required. saasmail uses Queues, which aren't on the free plan. Email Routing is free; Cloudflare Email Sending is usage-based.
 
-Verify these are installed and accessible:
+Tell the user all of this before touching anything, so they can back out cheaply.
 
-- **Node.js** (v18+): Run `node --version`
-- **Yarn**: Run `yarn --version`
-- **Wrangler CLI**: Run `wrangler --version`
+## Preflight Checkpoints (hard gates)
 
-If wrangler is missing, offer to install it: `npm install -g wrangler`
+Confirm each of these **explicitly** with the user — ask, don't assume. If any answer is "no", stop and help them resolve it before continuing. These exist because every later step assumes them, and a half-configured Cloudflare account is annoying to clean up.
 
-### Step 2: Authenticate with Cloudflare
+### Checkpoint 1 — Do you own a domain?
 
-Check if already logged in: `wrangler whoami`
+Ask: "Do you already own a domain you want to use for saasmail?"
 
-If not authenticated, tell the user to run `wrangler login` themselves (it opens a browser, which requires interactive input). Use the `!` prefix suggestion:
+- **No** → Stop. Tell them to buy one (Cloudflare Registrar, Namecheap, etc.) and come back. A single domain can cover all three roles; split domains are also fine.
 
-> Type `! wrangler login` in the prompt to authenticate with Cloudflare.
+### Checkpoint 2 — Is that domain on Cloudflare?
 
-Wait for confirmation before proceeding.
+Ask: "Are the domain's nameservers pointing to Cloudflare (the domain is an active Cloudflare zone)?"
 
-### Step 3: Install Dependencies
+- **No** → Stop. Instruct them to open the Cloudflare dashboard → **Add a Site**, then switch nameservers at their registrar to the ones Cloudflare provides. Propagation can take up to a few hours. Both Email Routing and `custom_domain` worker routes require the zone to live on Cloudflare.
 
-Run `yarn install` if `node_modules/` doesn't exist or looks stale.
+### Checkpoint 3 — Workers Paid plan?
 
-### Step 4: Create Cloudflare Resources
+Ask: "Is your Cloudflare account on the **Workers Paid** plan (~$5/month)?"
 
-Create each resource and capture the output. The user's Cloudflare account must be on a paid plan for Queues.
+- **No** → Stop. Send them to https://dash.cloudflare.com/?to=/:account/workers/plans to upgrade, and wait for them to come back. Without it, `wrangler queues create` will fail and the deploy will not succeed.
 
-**D1 Database:**
+### Checkpoint 4 — Tooling
+
+Run (the user has cloned the repo):
+
+```bash
+node --version    # v18+
+yarn --version
+wrangler --version
+```
+
+If wrangler is missing: `npm install -g wrangler`.
+
+### Final confirmation
+
+Before creating a single resource, restate to the user what they've confirmed:
+
+> You've told me: you own `<domain>`, it's on Cloudflare, your account is on Workers Paid, and tooling is installed. I'm about to create a D1 database, an R2 bucket, and a Queue in your Cloudflare account, and deploy a worker. Ready?
+
+Wait for an explicit yes. This is the last low-cost checkpoint.
+
+## Decisions
+
+### Decision 1: Domain roles
+
+saasmail distinguishes three roles. They can be the same domain, or split across several:
+
+1. **UI / API host** — where the web app is served (e.g. `mail.example.com`). Becomes `BASE_URL`.
+2. **Inbound domain(s)** — domains whose incoming mail should land in saasmail. If you want `support@example.com` to show up in the app, `example.com` is an inbound domain.
+3. **Send-from domain(s)** — domains saasmail will send _from_. If outgoing mail should come from `hello@example.com`, `example.com` is a send-from domain.
+
+Most single-domain setups use the same domain for all three, with the UI on a subdomain (`mail.example.com`). Ask the user to assign each role, and record the answers — you'll reuse them below.
+
+### Decision 2: Outbound email provider
+
+- **Option A — Cloudflare Email Sending** (default; recommended for a pure-Cloudflare setup). Uses the `send_email` binding. Each send-from domain must be onboarded in Cloudflare Email Service (Step 8 below).
+- **Option B — Resend**. Set `RESEND_API_KEY` as a secret. Each send-from domain must be verified in the Resend dashboard instead.
+
+At runtime, if `RESEND_API_KEY` is set, Resend wins; otherwise the `send_email` binding is used. Default the user to Option A unless they already have a Resend account and prefer it.
+
+## Deployment Steps
+
+Run these in order, straight through. Don't pause between steps unless the user must make a decision or input a credential.
+
+### Step 1: Authenticate with Cloudflare
+
+```bash
+wrangler whoami
+```
+
+If not authenticated, the user runs it themselves (it opens a browser):
+
+> Type `! wrangler login` in the prompt.
+
+Wait for their confirmation before continuing.
+
+### Step 2: Install Dependencies
+
+```bash
+yarn install
+```
+
+### Step 3: Create Cloudflare Resources
 
 ```bash
 wrangler d1 create saasmail-db
-```
-
-Capture the `database_id` from the output.
-
-**R2 Bucket:**
-
-```bash
 wrangler r2 bucket create saasmail-attachments
-```
-
-**Queue:**
-
-```bash
 wrangler queues create saasmail-sequence-emails
 ```
 
-If any creation fails because the resource already exists, that's fine — just note it and move on.
+**Capture the `database_id`** printed by `wrangler d1 create` — you'll paste it into `wrangler.jsonc` next.
 
-### Step 5: Configure wrangler.jsonc
+If any resource already exists, note it and move on. If the queue command fails with a plan error, Checkpoint 3 was not actually satisfied — stop and have the user upgrade.
 
-Copy the example:
+### Step 4: Configure `wrangler.jsonc`
 
 ```bash
 cp wrangler.jsonc.example wrangler.jsonc
 ```
 
-Then edit `wrangler.jsonc` to fill in:
+Edit `wrangler.jsonc` and fill in:
 
-- `account_id`: Get from `wrangler whoami` output or ask the user
-- `database_id` in `d1_databases`: Use the ID captured from Step 4
-- `BASE_URL`: Ask the user what domain they'll use (e.g., `https://mail.example.com`)
-- `TRUSTED_ORIGINS`: Set to `http://localhost:8080,<BASE_URL>`
+- `account_id` — from `wrangler whoami`.
+- `d1_databases[0].database_id` — the ID captured in Step 3.
+- `routes` — uncomment the block and set `pattern` to the UI host from Decision 1. Keep `custom_domain: true`.
+- `BASE_URL` — `https://<UI host>`.
+- `TRUSTED_ORIGINS` — `<BASE_URL>` (production-only; do not add localhost).
+- If Decision 2 is **Option A**, uncomment the `send_email` block.
+- Optional branding: `APP_NAME`, `APP_LOGO_LETTER`, `COOKIE_PREFIX`.
 
-If the user wants a custom domain, uncomment and configure the `routes` section.
+**Do not rename bindings.** The worker code looks them up by exact name — renaming any of these will break the app:
 
-### Step 6: Configure Secrets
+| Key in `wrangler.jsonc`      | Required value  |
+| ---------------------------- | --------------- |
+| `d1_databases[].binding`     | `"DB"`          |
+| `r2_buckets[].binding`       | `"R2"`          |
+| `queues.producers[].binding` | `"EMAIL_QUEUE"` |
+| `send_email[].name`          | `"EMAIL"`       |
 
-Copy the example:
+`database_name`, `bucket_name`, `queue`, `account_id`, and all IDs can be freely changed. Only the `binding` / `name` values above are load-bearing.
 
-```bash
-cp .dev.vars.example .dev.vars
-```
-
-Ask the user for:
-
-- **RESEND_API_KEY**: Their Resend API key (from https://resend.com/api-keys)
-- **BETTER_AUTH_SECRET**: Generate one for them with `openssl rand -hex 32`
-
-Write these values into `.dev.vars`.
-
-For production deployment, also set them as Cloudflare secrets:
+### Step 5: Set Production Secrets
 
 ```bash
-wrangler secret put RESEND_API_KEY
 wrangler secret put BETTER_AUTH_SECRET
 ```
 
-Tell the user they'll need to paste the values when prompted by wrangler.
-
-### Step 7: Run Migrations
-
-Apply database migrations:
+Generate the value to paste when wrangler prompts:
 
 ```bash
-# Local development database
-yarn db:migrate:dev
+openssl rand -hex 32
+```
 
-# Production database (on Cloudflare)
+If Decision 2 is **Option B (Resend)**, also run:
+
+```bash
+wrangler secret put RESEND_API_KEY
+```
+
+Paste the Resend API key (from https://resend.com/api-keys) when prompted.
+
+Do **not** set `RESEND_API_KEY` for Option A — its mere presence tells saasmail to use Resend, overriding the `send_email` binding.
+
+### Step 6: Apply Database Migrations
+
+```bash
 yarn db:migrate:prod
 ```
 
-### Step 8: Configure Email Routing
+This applies schema migrations to the remote D1 database directly via wrangler; the worker does not need to be deployed yet.
 
-This step requires manual action in the Cloudflare dashboard. Instruct the user:
-
-> Go to the [Cloudflare dashboard](https://dash.cloudflare.com/), select your domain, then navigate to **Email > Email Routing > Routing Rules**. Add a catch-all rule that routes all incoming email to your saasmail worker.
->
-> If you haven't set up email routing on this domain before, you'll need to add the required DNS records that Cloudflare prompts you to add.
-
-### Step 9: Deploy
-
-Build and deploy:
+### Step 7: Deploy
 
 ```bash
 yarn deploy
 ```
 
-### Step 10: Verify
+Once this succeeds, the worker exists in the user's account and can be referenced by Email Routing rules. (The next step needs the worker to be deployable-from-dashboard-dropdown, which is why deploy happens before routing.)
 
-Tell the user to visit their deployed URL and create their first user account. The first user registered becomes the admin.
+Verify the custom domain is attached: open `https://<BASE_URL>` in a browser — you should see the saasmail sign-in page. If it's the Cloudflare "not found" page, `routes` wasn't uncommented in Step 4.
 
-Suggest they also try:
+### Step 8: Configure Email Routing (inbound)
 
-- Sending a test email to their configured domain to verify receiving works
-- Sending a reply from the UI to verify Resend sending works
+Manual dashboard step, repeated **for each inbound domain** from Decision 1:
 
-## Completion
+1. Cloudflare dashboard → select the inbound domain → **Email → Email Routing**.
+2. If Email Routing isn't enabled, click **Enable Email Routing**. Cloudflare will show MX + TXT (SPF) records to add; since the zone is on Cloudflare (Checkpoint 2), one-click install works.
+3. Under **Routing Rules**, add a **catch-all** rule with action **Send to a Worker** and pick the worker (`saasmail` by default, or whatever `name` was kept in `wrangler.jsonc`). Save.
 
-When all steps are done, summarize what was set up:
+If the worker isn't in the dropdown, Step 7 didn't actually succeed — go back and check `wrangler deployments list`.
 
-- Cloudflare Worker deployed at `<BASE_URL>`
-- D1 database for email storage
-- R2 bucket for attachments
-- Queue for email sequence processing
-- Hourly cron for checking due sequence emails
-- Email routing configured to receive incoming mail
+### Step 9: Verify Send-From Domains
 
-Mention that they can run `yarn dev` for local development going forward.
+**Option B (Resend)**: verify each send-from domain in the Resend dashboard → **Domains → Add Domain**, and add the DKIM/SPF records Resend provides. Then skip the rest of this step.
+
+**Option A (Cloudflare Email Sending)**: repeat for each send-from domain from Decision 1:
+
+1. Open [Email Service](https://dash.cloudflare.com/?to=/:account/email-service) — **account-level**, not a per-zone setting.
+2. **Add a domain** → enter the send-from domain.
+3. Add the DKIM / SPF / DMARC records Cloudflare shows (one-click if the zone is on Cloudflare).
+4. Wait for the status to flip to **Verified**. Until then, sends from that domain will fail at the provider.
+
+Email Routing (Step 8) and Email Service (Step 9) are independent systems — enabling one does not enable the other. A domain can do inbound only, outbound only, both, or neither.
+
+### Step 10: Verify End-to-End
+
+1. Visit `https://<BASE_URL>` and sign up. **The first account registered becomes the admin** — do this before sharing the URL with anyone else.
+2. Complete passkey enrollment on the prompt. saasmail enforces passkey auth for `/api/*` in production; without it, you'll be locked out of admin actions.
+3. **Inbound test**: send an email from an external account (e.g. Gmail) to any address at each inbound domain. It should appear in the UI within seconds. If not: recheck Step 8 and confirm `dig MX <inbound domain>` returns Cloudflare's MX hosts.
+4. **Outbound test**: reply to that email from the UI using a send-from address on a verified domain. If it never arrives, the send-from domain is almost certainly unverified (Step 9).
+
+## Completion Summary
+
+Show the user exactly what was set up, substituting their real values:
+
+- Worker deployed at `<BASE_URL>`
+- Inbound: Cloudflare Email Routing → worker, on `<inbound domain(s)>`
+- Outbound: `<Cloudflare Email Sending | Resend>`, from `<send-from domain(s)>`
+- D1 database `saasmail-db` (binding `DB`)
+- R2 bucket `saasmail-attachments` (binding `R2`)
+- Queue `saasmail-sequence-emails` (binding `EMAIL_QUEUE`)
+- Hourly cron for sequence email delivery
+
+## Common Issues
+
+- **`wrangler queues create` fails with a plan error** — Workers Paid plan isn't actually active. Recheck at https://dash.cloudflare.com/?to=/:account/workers/plans.
+- **Worker missing from Email Routing "Send to a Worker" dropdown** — Step 7 didn't succeed, or the dashboard is cached. Run `wrangler deployments list` to confirm, then refresh the dashboard.
+- **Inbound test email never arrives** — MX records haven't propagated, or the catch-all isn't saved. Email Routing **Overview** should say status **Active**; `dig MX <inbound domain>` should return `*.mx.cloudflare.net` hosts.
+- **Outbound email looks sent but never arrives** — the send-from domain isn't verified. Check Email Service (Option A) or Resend → Domains (Option B); status must read **Verified**.
+- **Locked out after sign-up** — passkey enrollment wasn't completed. Sign in again and finish the prompt; the server requires a passkey for `/api/*` in production.
+- **`BASE_URL` serves a blank Cloudflare page instead of saasmail** — the `routes` block in `wrangler.jsonc` wasn't uncommented, or `custom_domain: true` is missing. Fix and redeploy.
