@@ -53,6 +53,7 @@ export async function loginViaApi(
 ): Promise<void> {
   const res = await request.post(`${BASE_URL}/api/auth/sign-in/email`, {
     data: { email, password },
+    headers: { origin: BASE_URL },
   });
   if (!res.ok()) {
     const body = await res.text();
