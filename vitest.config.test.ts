@@ -17,6 +17,10 @@ export default defineConfig({
           // the enforcement itself is covered by targeted tests in
           // `__tests__/passkey-enforcement.test.ts`.
           DISABLE_PASSKEY_GATE: "true",
+          // `.dev.vars` sets DEMO_MODE=1 for `yarn dev`, and miniflare
+          // auto-loads those secrets. Force it off for tests so sequence
+          // processor / enroll route exercise real (non-demo) behavior.
+          DEMO_MODE: "0",
         },
       },
     }),
