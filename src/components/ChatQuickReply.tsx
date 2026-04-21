@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { replyToEmail } from "@/lib/api";
+import { replyToEmail, sendEmail } from "@/lib/api";
 
 interface ChatQuickReplyProps {
   inboxAddress: string; // From address, fixed to this section's inbox
-  latestReceivedEmailId: string | null; // What we reply to
+  latestReceivedEmailId: string | null; // What we reply to; if null, send as new email
+  personEmail: string; // Recipient address when no reply target exists
   onSent: () => void; // Refetch + scroll
 }
 
@@ -30,6 +31,7 @@ function plainTextToHtml(text: string): string {
 export default function ChatQuickReply({
   inboxAddress,
   latestReceivedEmailId,
+  personEmail,
   onSent,
 }: ChatQuickReplyProps) {
   const [text, setText] = useState("");
@@ -47,22 +49,32 @@ export default function ChatQuickReply({
     el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
   }, [text]);
 
-  const canSend = text.trim().length > 0 && !sending && !!latestReceivedEmailId;
+  const canSend = text.trim().length > 0 && !sending;
 
   async function handleSend() {
-    if (!canSend || !latestReceivedEmailId) return;
+    if (!canSend) return;
     setSending(true);
     setError(null);
     try {
-      await replyToEmail(latestReceivedEmailId, {
-        bodyHtml: plainTextToHtml(text),
-        bodyText: text,
-        fromAddress: inboxAddress,
-      });
+      if (latestReceivedEmailId) {
+        await replyToEmail(latestReceivedEmailId, {
+          bodyHtml: plainTextToHtml(text),
+          bodyText: text,
+          fromAddress: inboxAddress,
+        });
+      } else {
+        await sendEmail({
+          to: personEmail,
+          fromAddress: inboxAddress,
+          subject: "(no subject)",
+          bodyHtml: plainTextToHtml(text),
+          bodyText: text,
+        });
+      }
       setText("");
       onSent();
     } catch (e) {
-      setError("Failed to send reply");
+      setError("Failed to send message");
       console.error(e);
     } finally {
       setSending(false);
@@ -87,11 +99,8 @@ export default function ChatQuickReply({
           onKeyDown={handleKeyDown}
           rows={1}
           placeholder={
-            latestReceivedEmailId
-              ? "Type a reply…"
-              : "Waiting for a message to reply to."
+            latestReceivedEmailId ? "Type a reply…" : "Type a message…"
           }
-          disabled={!latestReceivedEmailId}
           className="flex-1 resize-none rounded-md border border-border bg-white px-2 py-1.5 text-xs text-text-primary outline-none focus:ring-1 focus:ring-accent disabled:bg-bg-muted disabled:text-text-tertiary"
         />
         <button

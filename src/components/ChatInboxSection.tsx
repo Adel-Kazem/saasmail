@@ -221,6 +221,7 @@ export default function ChatInboxSection({
       <ChatQuickReply
         inboxAddress={group.inbox}
         latestReceivedEmailId={replyTarget?.id ?? null}
+        personEmail={personEmail}
         onSent={onSent}
       />
     </section>
