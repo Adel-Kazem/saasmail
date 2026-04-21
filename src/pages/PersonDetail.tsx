@@ -45,13 +45,22 @@ function groupEmailsByInbox(emails: Email[]): ThreadInboxGroup[] {
   const groups: ThreadInboxGroup[] = [];
   for (const [inbox, list] of byInbox) {
     // Emails come newest-first from the API; keep that order within a group.
+    // Sort inbox groups by the most-recent RECEIVED email so that sending a
+    // reply does not re-order inboxes (which, combined with the auto-scroll,
+    // pushes other inbox sections — "old threads" — off-screen). A reply is a
+    // response to existing traffic, not fresh activity. Fall back to any
+    // email's timestamp for inboxes that have never received an email so
+    // outbound-only conversations still sort reasonably on initial load.
+    const latestReceivedTs =
+      list.find((e) => e.type === "received")?.timestamp ?? 0;
+    const latestAnyTs = list[0]?.timestamp ?? 0;
     groups.push({
       inbox,
       emails: list,
-      latestTimestamp: list[0]?.timestamp ?? 0,
+      latestTimestamp: latestReceivedTs || latestAnyTs,
     });
   }
-  // Sort inbox groups by most recent activity.
+  // Sort inbox groups by most recent received activity.
   groups.sort((a, b) => b.latestTimestamp - a.latestTimestamp);
   return groups;
 }
