@@ -176,17 +176,15 @@ export default function MessageBubble({
             View
           </button>
         )}
-        {email.type === "received" && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onReply(email.id);
-            }}
-            className="text-[11px] text-text-tertiary hover:text-text-secondary"
-          >
-            Reply
-          </button>
-        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onReply(email.id);
+          }}
+          className="text-[11px] text-text-tertiary hover:text-text-secondary"
+        >
+          Reply
+        </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
