@@ -62,7 +62,7 @@ export default function ComposeModal({ open, onClose }: ComposeModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="border-border bg-white text-text-primary sm:max-w-lg">
+      <DialogContent className="border-border bg-white text-text-primary sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-text-primary">Compose</DialogTitle>
         </DialogHeader>
@@ -119,7 +119,7 @@ export default function ComposeModal({ open, onClose }: ComposeModalProps) {
             <label className="text-xs font-medium text-text-secondary">
               Message
             </label>
-            <div data-testid="compose-body">
+            <div data-testid="compose-body" className="h-80">
               <TiptapEditor content={bodyHtml} onUpdate={setBodyHtml} />
             </div>
           </div>

@@ -53,52 +53,37 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Notion-like Editor Styles ── */
+/* ── Rich Text Editor Styles ── */
 
 .notion-editor-wrapper {
   display: flex;
   flex-direction: column;
   height: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .notion-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 6px 12px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg);
+  background: var(--color-bg-subtle);
 }
 
 .notion-editor-content {
   flex: 1;
   overflow: auto;
   position: relative;
-  padding-left: 40px;
 }
 
 .notion-editor {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 24px 16px;
+  padding: 12px 14px;
   color: var(--color-text-primary);
-  line-height: 1.7;
-  font-size: 15px;
-}
-
-.notion-editor > * {
-  margin-top: 2px;
-  margin-bottom: 2px;
-  padding: 3px 0;
-  border-radius: 4px;
-  transition: background-color 0.1s;
-}
-
-.notion-editor > *:hover {
-  background-color: rgba(15, 23, 42, 0.03);
+  line-height: 1.55;
+  font-size: 14px;
 }
 
 .notion-editor h1 {
@@ -191,55 +176,4 @@ body {
   float: left;
   height: 0;
   pointer-events: none;
-}
-
-/* ── Drag Handle ── */
-
-.drag-handle {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  cursor: grab;
-  color: var(--color-text-tertiary);
-  opacity: 0;
-  transition:
-    opacity 0.15s,
-    background-color 0.15s,
-    color 0.15s;
-  z-index: 20;
-  user-select: none;
-}
-
-.notion-editor-content:hover .drag-handle {
-  opacity: 0.4;
-}
-
-.drag-handle:hover {
-  opacity: 1 !important;
-  background: var(--color-bg-muted);
-  color: var(--color-text-secondary);
-}
-
-.drag-handle:active,
-.drag-handle.dragging {
-  cursor: grabbing;
-  opacity: 1 !important;
-  background: var(--color-accent);
-  color: white;
-}
-
-/* ── Drop Indicator ── */
-
-.drop-indicator {
-  position: absolute;
-  height: 2px;
-  background: var(--color-accent);
-  border-radius: 1px;
-  pointer-events: none;
-  z-index: 15;
-  box-shadow: 0 0 4px rgba(37, 99, 235, 0.35);
 }
