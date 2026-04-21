@@ -1,0 +1,1 @@
+ALTER TABLE `sent_emails` ADD `message_id` text;

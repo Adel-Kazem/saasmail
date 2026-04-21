@@ -11,6 +11,7 @@ export const sentEmails = sqliteTable(
     bodyHtml: text("body_html"),
     bodyText: text("body_text"),
     inReplyTo: text("in_reply_to"),
+    messageId: text("message_id"),
     resendId: text("resend_id"),
     status: text("status").notNull().default("sent"),
     sentAt: integer("sent_at").notNull(),
