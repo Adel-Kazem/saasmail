@@ -32,6 +32,12 @@ Pick one outbound provider at deploy time:
 
 If `RESEND_API_KEY` is set it takes precedence; otherwise the `EMAIL` binding is used. If neither is configured, send attempts return a "No email provider configured" error.
 
+## How much does it cost?
+
+**$5/month** for the Cloudflare Workers Paid plan, which includes **3,000 emails per month** of Cloudflare Email Sending at no extra cost. That's it.
+
+No VM to rent. No sprawling cloud console to learn. Just a domain, a Cloudflare account, and the Workers Paid plan.
+
 ## Features
 
 ### One Timeline Per Customer
