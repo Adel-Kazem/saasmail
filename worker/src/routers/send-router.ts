@@ -185,6 +185,10 @@ sendRouter.openapi(replyEmailRoute, async (c) => {
       return c.json({ error: "Email not found" }, 404);
     }
     const orig = sentRow[0];
+    // Defense-in-depth: only allow replies to sent rows whose original
+    // fromAddress the caller still owns. Prevents a user from threading a
+    // reply to another user's outgoing message via its id.
+    assertInboxAllowed(allowed, orig.fromAddress);
     if (!orig.personId) {
       return c.json({ error: "Email has no associated person" }, 404);
     }

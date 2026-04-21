@@ -479,6 +479,45 @@ describe("send stores generated message-id", () => {
       expect(row?.toAddress).toBe("target2@external.com");
     });
 
+    it("forbids reply when caller does not own the original sent email's inbox", async () => {
+      // Non-admin member user has access to a@x.com only. A sent row exists
+      // that was originally sent from b@x.com (another user's inbox). Even if
+      // the caller's new fromAddress is a@x.com (allowed), they must not be
+      // able to thread a reply onto the other user's outgoing message.
+      const { apiKey, userId } = await createTestUser({
+        id: "u-rso4",
+        role: "member",
+        email: "member@x.com",
+      });
+      await grantInbox(userId, "a@x.com");
+      await createTestPerson({ id: "p-rso4", email: "target4@external.com" });
+      const db = getDb();
+      const now = Math.floor(Date.now() / 1000);
+      await db.insert(sentEmails).values({
+        id: "sent-other-inbox",
+        personId: "p-rso4",
+        fromAddress: "b@x.com",
+        toAddress: "target4@external.com",
+        subject: "Not your outreach",
+        bodyHtml: "<p>hi</p>",
+        bodyText: null,
+        messageId: "<orig@b.test>",
+        resendId: "r-other",
+        status: "sent",
+        sentAt: now,
+        createdAt: now,
+      });
+      const res = await authFetch("/api/send/reply/sent-other-inbox", {
+        apiKey,
+        method: "POST",
+        body: JSON.stringify({
+          fromAddress: "a@x.com",
+          bodyHtml: "<p>follow up</p>",
+        }),
+      });
+      expect(res.status).toBe(403);
+    });
+
     it("returns 404 when id matches neither emails nor sent_emails", async () => {
       const { apiKey, userId } = await createTestUser({
         id: "u-rso3",
