@@ -11,6 +11,7 @@ import { people } from "../db/people.schema";
 import { sentEmails } from "../db/sent-emails.schema";
 import { interpolate } from "./interpolate";
 import { formatFromAddress } from "./format-from-address";
+import { generateMessageId } from "./message-id";
 
 export interface SequenceEmailMessage {
   sequenceEmailId: string;
@@ -173,12 +174,14 @@ async function processSequenceEmail(
   const renderedSubject = interpolate(template.subject, mergedVars);
   const renderedHtml = interpolate(template.bodyHtml, mergedVars);
 
+  const messageId = generateMessageId(fromAddress);
   const formattedFrom = await formatFromAddress(db, fromAddress);
   const result = await sender.send({
     from: formattedFrom,
     to: person.email,
     subject: renderedSubject,
     html: renderedHtml,
+    headers: { "Message-ID": messageId },
   });
 
   // Store sent email record
@@ -191,6 +194,7 @@ async function processSequenceEmail(
     subject: renderedSubject,
     bodyHtml: renderedHtml,
     bodyText: null,
+    messageId,
     resendId: result.id,
     status: result.error ? "failed" : "sent",
     sentAt: now,
