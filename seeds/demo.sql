@@ -1,9 +1,26 @@
 -- Demo seed data for local development.
 -- Run: yarn db:seed:dev
--- Safe to re-run: uses INSERT OR REPLACE with stable IDs.
+-- Safe to re-run: truncates demo tables first, then reseeds with stable IDs.
 --
 -- Populates: sender_identities (inboxes), people, emails (inbound), sent_emails (replies).
 -- Timestamps are expressed as seconds since epoch, anchored to `now` so recency sorts sensibly.
+
+-- ----------------------------------------------------------------------------
+-- Clean demo tables so re-running yields a deterministic state. Auth tables
+-- (user / session / account / verification) are intentionally preserved.
+-- ----------------------------------------------------------------------------
+DELETE FROM sequence_emails;
+DELETE FROM sequence_enrollments;
+DELETE FROM sequences;
+DELETE FROM api_keys;
+DELETE FROM email_templates;
+DELETE FROM invitations;
+DELETE FROM attachments;
+DELETE FROM sent_emails;
+DELETE FROM emails;
+DELETE FROM people;
+DELETE FROM inbox_permissions;
+DELETE FROM sender_identities;
 
 -- ----------------------------------------------------------------------------
 -- Inboxes (admin-configured display names)
