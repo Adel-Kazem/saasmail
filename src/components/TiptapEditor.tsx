@@ -20,7 +20,7 @@ export default function TiptapEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: placeholderText || "Start writing...",
+        placeholder: placeholderText || "Start writing",
         emptyEditorClass: "is-editor-empty",
       }),
     ],

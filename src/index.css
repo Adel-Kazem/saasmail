@@ -80,7 +80,6 @@ body {
 }
 
 .notion-editor {
-  padding: 12px 14px;
   color: var(--color-text-primary);
   line-height: 1.55;
   font-size: 14px;
