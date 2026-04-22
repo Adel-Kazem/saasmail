@@ -1,0 +1,57 @@
+export class NotificationsHub implements DurableObject {
+  ctx: DurableObjectState;
+
+  constructor(ctx: DurableObjectState) {
+    this.ctx = ctx;
+  }
+
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/connect") {
+      const upgrade = request.headers.get("Upgrade");
+      if (upgrade !== "websocket") {
+        return new Response("Expected WebSocket", { status: 426 });
+      }
+
+      const isAdmin = request.headers.get("X-Is-Admin") === "true";
+      const inboxes: string[] = isAdmin
+        ? []
+        : JSON.parse(request.headers.get("X-Allowed-Inboxes") ?? "[]");
+
+      const pair = new WebSocketPair();
+      const [client, server] = Object.values(pair);
+
+      this.ctx.acceptWebSocket(server);
+      server.serializeAttachment({ isAdmin, inboxes });
+
+      return new Response(null, { status: 101, webSocket: client });
+    }
+
+    if (url.pathname === "/notify" && request.method === "POST") {
+      const { inbox } = (await request.json()) as { inbox: string };
+      for (const ws of this.ctx.getWebSockets()) {
+        const meta = ws.deserializeAttachment() as {
+          isAdmin: boolean;
+          inboxes: string[];
+        };
+        if (meta.isAdmin || meta.inboxes.includes(inbox)) {
+          try {
+            ws.send(JSON.stringify({ type: "email_received", inbox }));
+          } catch {
+            // client disconnected; DO will clean it up via webSocketClose
+          }
+        }
+      }
+      return new Response("ok");
+    }
+
+    return new Response("Not found", { status: 404 });
+  }
+
+  webSocketMessage(_ws: WebSocket, _message: string | ArrayBuffer) {}
+  webSocketClose(ws: WebSocket) {
+    ws.close();
+  }
+  webSocketError(_ws: WebSocket) {}
+}

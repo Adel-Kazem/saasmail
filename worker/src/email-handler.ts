@@ -160,6 +160,23 @@ export async function handleEmail(
     createdAt: now,
   });
 
+  // Notify connected WebSocket clients about the new email
+  try {
+    const hubId = env.NOTIFICATIONS_HUB.idFromName("global");
+    const hub = env.NOTIFICATIONS_HUB.get(hubId);
+    ctx.waitUntil(
+      hub.fetch(
+        new Request("http://do/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inbox: parsed.to }),
+        }),
+      ),
+    );
+  } catch {
+    // Non-fatal: real-time push is best-effort
+  }
+
   // Cancel any active sequences for this person
   await cancelSequencesForPerson(db, actualPersonId);
 

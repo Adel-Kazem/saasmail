@@ -113,6 +113,10 @@ export default function PersonDetail({
       .finally(() => setLoading(false));
   }, [person.id]);
 
+  useEffect(() => {
+    if (refreshKey) refetchEmails();
+  }, [refreshKey]);
+
   // Auto-scroll to latest (bottom) whenever the email list or expansion changes
   useEffect(() => {
     if (loading) return;
