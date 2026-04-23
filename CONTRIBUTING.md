@@ -1,6 +1,10 @@
 # Contributing to saasmail
 
-Thanks for your interest in contributing to saasmail.
+Thanks for your interest in contributing to saasmail. Please also read the [Code of Conduct](CODE_OF_CONDUCT.md) — it applies in every project space.
+
+## Licensing of contributions
+
+saasmail is licensed under [Apache License 2.0](LICENSE). There is **no CLA**. By opening a pull request you agree that your contribution is licensed under the same Apache 2.0 license as the rest of the project, and that you have the right to license it.
 
 ## Getting Started
 
@@ -15,8 +19,12 @@ Thanks for your interest in contributing to saasmail.
 2. Make your changes
 3. Run tests: `yarn test`
 4. Run type checking: `yarn tsc --noEmit`
-5. Commit and push your branch
-6. Open a pull request against `main`
+5. If you changed the schema, generate a migration: `yarn db:generate`
+6. Add an entry under `## [Unreleased]` in `CHANGELOG.md` for any user-visible change
+7. Commit and push your branch
+8. Open a pull request against `main`
+
+> Note: a `CLAUDE.md` at the repo root contains notes the maintainer uses with [Claude Code](https://claude.ai/claude-code). It's optional context — you don't need Claude Code to contribute.
 
 ## Pull Request Guidelines
 

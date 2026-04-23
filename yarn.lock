@@ -28,53 +28,53 @@
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.29.2.tgz#9a6e2d05f4b6692e1801cd4fb176ad823930ed5e"
   integrity sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==
 
-"@better-auth/core@1.6.3":
-  version "1.6.3"
-  resolved "https://registry.npmjs.org/@better-auth/core/-/core-1.6.3.tgz"
-  integrity sha512-HefGR2SNfAi2RhT6XvSYViH4a0xoCGGL10bSDiv6sQGrmY6ulEQEV1X4nebTHeG0P6jdBmXAoEW3k37nhpk99w==
+"@better-auth/core@1.6.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@better-auth/core/-/core-1.6.7.tgz#9c626d21d40a55e12dd80df64af5276995e5fed2"
+  integrity sha512-Q0C7wEEs8VUA0y+UrB/nClGSnLCrJ3uER6Ja8Kb5H2hSBmIFOWWYgnFsEX/qCeQcvbX3i20zh1NlFM1qfKxNzA==
   dependencies:
     "@opentelemetry/semantic-conventions" "^1.39.0"
     "@standard-schema/spec" "^1.1.0"
     zod "^4.3.6"
 
-"@better-auth/drizzle-adapter@1.6.3":
-  version "1.6.3"
-  resolved "https://registry.npmjs.org/@better-auth/drizzle-adapter/-/drizzle-adapter-1.6.3.tgz"
-  integrity sha512-P5erUYKoctOnOf+hd3umkOhOqJA+WuDByzmgnxZMBQLhgmusn5cgW10449B9aZu8HxIcU/tUQo/8ucwXHNzZ0A==
+"@better-auth/drizzle-adapter@1.6.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@better-auth/drizzle-adapter/-/drizzle-adapter-1.6.7.tgz#1f679764c1122002bf097d7d84b67d29feeb7cea"
+  integrity sha512-x6yL1PXQwxa7tmKfPiCG1yrOvP+8n86FuueY5Cfc0XDMaAWzNt8oBqt+WLo6rkL7BcRiFBUA3r86s7nCwO1xrQ==
 
-"@better-auth/kysely-adapter@1.6.3":
-  version "1.6.3"
-  resolved "https://registry.npmjs.org/@better-auth/kysely-adapter/-/kysely-adapter-1.6.3.tgz"
-  integrity sha512-4iZLGaajEdPMgtiTARINbNZGl6CPHSzlS0fl4ONWryP/52iakYhXYNBJIB70Ls1Xl+kEqYkBFmndfj/x4j18RQ==
+"@better-auth/kysely-adapter@1.6.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@better-auth/kysely-adapter/-/kysely-adapter-1.6.7.tgz#8a13c2a6d6a355b707830ac9f92aca2ffb747b88"
+  integrity sha512-F/anpeWCGYqJkhJ/TPxXA+MlRfNoBPQdzsU3JOZvy8naQR/Qc0fzl2XAPgRsvwbbUJypC3FNNEDvGAhCWt1CVA==
 
-"@better-auth/memory-adapter@1.6.3":
-  version "1.6.3"
-  resolved "https://registry.npmjs.org/@better-auth/memory-adapter/-/memory-adapter-1.6.3.tgz"
-  integrity sha512-0HCogGjUqVBl5j+7pkoovyIIAcCKsy8wiebDbTnedD99bCXQ+BhBAf8KQG1wMx6Nnc8fFwDuhSBhvTmCrdlmMQ==
+"@better-auth/memory-adapter@1.6.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@better-auth/memory-adapter/-/memory-adapter-1.6.7.tgz#a2656ff3f6c0bcf9b2f178464a0898efd68b896a"
+  integrity sha512-oORPgJsJ2ozSaEs/hKC/LALxirZ32cJ6/KDY2XNsGSyNndVoRxFa+iAYU9giJn7ZhNR3yM/ux88JwTP79YfSRg==
 
-"@better-auth/mongo-adapter@1.6.3":
-  version "1.6.3"
-  resolved "https://registry.npmjs.org/@better-auth/mongo-adapter/-/mongo-adapter-1.6.3.tgz"
-  integrity sha512-xer3hjuYaqcx/qMdZMXTUQz4ROLeS14Knas6OSY2gK8jgAidZO7twcb+wLgTbtJYmoXZqKFzSxoWuf6LxVvZCw==
+"@better-auth/mongo-adapter@1.6.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@better-auth/mongo-adapter/-/mongo-adapter-1.6.7.tgz#65908cc8f2af4777a1a97fd7318c68640175aa50"
+  integrity sha512-fA0aiwKa/JZ22f4gg6knFusi2W8fhCB/L/3ADCsCPDwMpQHFqTQqBlwTO/3nK7j1J+KYvcZNx3FoeCXm3mo3Tg==
 
-"@better-auth/passkey@^1.6.4":
-  version "1.6.4"
-  resolved "https://registry.npmjs.org/@better-auth/passkey/-/passkey-1.6.4.tgz"
-  integrity sha512-MSfflNd1gj+XyWlTk0TFkvHOUIWqYfsp9cLUAzirSnv2ftCv861GPBkP+3d4z5DXBwytvdGOqE+ccYtFYYAn0A==
+"@better-auth/passkey@^1.6.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@better-auth/passkey/-/passkey-1.6.7.tgz#728f02c1861b7d7592c89d0dda169bfeaaffd92a"
+  integrity sha512-/00/31nFBYQXN9iqq1I5iZaH79nFN4wdwKtPYnjIcs5j0DfvSpb8pXG3gWqyJY/HCJHAR15FgvLPOUlaeoWzSg==
   dependencies:
     "@simplewebauthn/browser" "^13.2.2"
     "@simplewebauthn/server" "^13.2.3"
     zod "^4.3.6"
 
-"@better-auth/prisma-adapter@1.6.3":
-  version "1.6.3"
-  resolved "https://registry.npmjs.org/@better-auth/prisma-adapter/-/prisma-adapter-1.6.3.tgz"
-  integrity sha512-vrlGEdrpzNH+S0AjnQt6T9jeIxqYDNRwq/1lOQ50wS5OAzSjtZQ+Q/UCrBTF8ZBrYzQq28zIAuk6k2+xhqxZpQ==
+"@better-auth/prisma-adapter@1.6.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@better-auth/prisma-adapter/-/prisma-adapter-1.6.7.tgz#621b956c3e8bbbfbd39b3f61073b0a138da59a58"
+  integrity sha512-DwCzzkcTyCrOgmYROVLxKlIX6OAlsAeMrC4VgIIyUgIlEZij+8rChIxpPFXK/Mc6wq7Zp/clIjFWbhW//2EjvQ==
 
-"@better-auth/telemetry@1.6.3":
-  version "1.6.3"
-  resolved "https://registry.npmjs.org/@better-auth/telemetry/-/telemetry-1.6.3.tgz"
-  integrity sha512-Kw2LFnxBt36KF0Cfw46qcOaNtuqgr6kjJPDHKHCx3b7tbiSAEeEhZCc7wvWYbZPXkgI58IGi+bMrgnWjFCG1Zw==
+"@better-auth/telemetry@1.6.7":
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/@better-auth/telemetry/-/telemetry-1.6.7.tgz#797eb614fd8ce1f8903ad8445fe53a704a81e52c"
+  integrity sha512-CUSvMyyh8SlcQNTf6x8MaOxWdJlKz3xSUYnb3ivJ+FgtAVCarZ+hvYYxjiiosYgX2dwlxo6iTEcofmFvlC9ICQ==
 
 "@better-auth/utils@0.4.0", "@better-auth/utils@^0.4.0":
   version "0.4.0"
@@ -98,82 +98,57 @@
   resolved "https://registry.npmjs.org/@cloudflare/unenv-preset/-/unenv-preset-2.16.0.tgz"
   integrity sha512-8ovsRpwzPoEqPUzoErAYVv8l3FMZNeBVQfJTvtzP4AgLSRGZISRfuChFxHWUQd3n6cnrwkuTGxT+2cGo8EsyYg==
 
-"@cloudflare/vite-plugin@^1.0.0":
-  version "1.32.2"
-  resolved "https://registry.npmjs.org/@cloudflare/vite-plugin/-/vite-plugin-1.32.2.tgz"
-  integrity sha512-sEI/jusfDvzHIL4oiBBV5iUxAXfTRvguecIDWQ/AxBgEjGO1ZslHOEy4rlxfgqrdRWtq0TM9m3oC+hT32hajEg==
+"@cloudflare/vite-plugin@^1.33.1":
+  version "1.33.1"
+  resolved "https://registry.yarnpkg.com/@cloudflare/vite-plugin/-/vite-plugin-1.33.1.tgz#57d40b906c3aa52e1d418fb859ee88d0e60085ba"
+  integrity sha512-bCwbMIPXW0bjvMWNiDEPmV4/Lc5nU/x3/yIGBrgMgxHa2caMvh6QaOplI7DUcHBpzMfz/0iQ0inVmyIuQ8eG4A==
   dependencies:
     "@cloudflare/unenv-preset" "2.16.0"
-    miniflare "4.20260410.0"
+    miniflare "4.20260421.0"
     unenv "2.0.0-rc.24"
-    wrangler "4.82.2"
+    wrangler "4.84.1"
     ws "8.18.0"
 
-"@cloudflare/vitest-pool-workers@^0.14.7":
-  version "0.14.7"
-  resolved "https://registry.npmjs.org/@cloudflare/vitest-pool-workers/-/vitest-pool-workers-0.14.7.tgz"
-  integrity sha512-6LooO25358uPn/7U3LUg5f5pLULncDTShGuOf00TyEn3VIBW2otq92dTNf8ScIR3gV9QDztXNfChc4mqPCSBEA==
+"@cloudflare/vitest-pool-workers@^0.14.9":
+  version "0.14.9"
+  resolved "https://registry.yarnpkg.com/@cloudflare/vitest-pool-workers/-/vitest-pool-workers-0.14.9.tgz#d7ef8c81915b7e3f02de5030b3031c5578b8cc09"
+  integrity sha512-XLJTOd+3A3BB6vPzD7gi1LTVKFSVge9HhGWXnLouPzySphMLbg+6xXELykFxZKyqP1AEjT2tc28AkBjM9GteFQ==
   dependencies:
     cjs-module-lexer "^1.2.3"
     esbuild "0.27.3"
-    miniflare "4.20260415.0"
-    wrangler "4.83.0"
+    miniflare "4.20260421.0"
+    wrangler "4.84.1"
     zod "^3.25.76"
 
-"@cloudflare/workerd-darwin-64@1.20260410.1":
-  version "1.20260410.1"
-  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-darwin-64/-/workerd-darwin-64-1.20260410.1.tgz#948ff85d30c7d5acfb6b207171146fadcd175abf"
-  integrity sha512-0sh6xPmCKUfv/lUklP1dfyeKxCuEZGS0HeduxnucL8ECxSgAdWTOD42h/lQTwZCIiWtyHB+ZNB9hsS2Mlf0tMQ==
+"@cloudflare/workerd-darwin-64@1.20260421.1":
+  version "1.20260421.1"
+  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-darwin-64/-/workerd-darwin-64-1.20260421.1.tgz#35227b588ca6416cffcbf7cf562b700f38253cc4"
+  integrity sha512-DLU5ZTZ1VHeZZnj0PuVJEMHKGisfLe2XShyImP5P/PPj/m/t7CLEJmPiI7FMxvT7ynArkckJl7m+Z5x7u4Kkdw==
 
-"@cloudflare/workerd-darwin-64@1.20260415.1":
-  version "1.20260415.1"
-  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-darwin-64/-/workerd-darwin-64-1.20260415.1.tgz#3a5ba6541cf6c250b4b760b00d940261e0f9d79f"
-  integrity sha512-dsxaKsQm3LnPGNPEdsRv09QN3Y4DqCw7kX5j6noKqbAtro2jTr95sVlYM1jUxZ5FkOl1f7SXgaKKB9t5H5Nkbg==
+"@cloudflare/workerd-darwin-arm64@1.20260421.1":
+  version "1.20260421.1"
+  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-darwin-arm64/-/workerd-darwin-arm64-1.20260421.1.tgz#8c011faff6bf4ee112b6b69a4b81473c8d10f309"
+  integrity sha512-Trotq3xRAkIcpC505WoxM8+kIH4JIvOJCNuRatyHcz9uF5S+ukgiVUFUlM+GIjw1uCM/Bda2St+vSniX1RZdpw==
 
-"@cloudflare/workerd-darwin-arm64@1.20260410.1":
-  version "1.20260410.1"
-  resolved "https://registry.npmjs.org/@cloudflare/workerd-darwin-arm64/-/workerd-darwin-arm64-1.20260410.1.tgz"
-  integrity sha512-r2On29gPvlk/eiH/OpeUT23xoB8W8D1PHr8lul5nyxElLqvh3yNxZUnJWrbcOl+ubfrvw7+jFwgopMe17xyf0g==
+"@cloudflare/workerd-linux-64@1.20260421.1":
+  version "1.20260421.1"
+  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-linux-64/-/workerd-linux-64-1.20260421.1.tgz#b6d4fa15df4dfaeb36aa945eab6bec7f258d396c"
+  integrity sha512-938QjUv0z+QqK6BAvgwX/lCIZ2b224ZXoXtGTbhyNVMhB+mt4Dj24cj9qca4ekNXjVM7uTKp1yOHZO97fVSacw==
 
-"@cloudflare/workerd-darwin-arm64@1.20260415.1":
-  version "1.20260415.1"
-  resolved "https://registry.npmjs.org/@cloudflare/workerd-darwin-arm64/-/workerd-darwin-arm64-1.20260415.1.tgz"
-  integrity sha512-+JgSgVA49KyKteHRA1SnonE4Zn5Ei5zdAp5FQMxFmXI8qulZw4Hl7safXxRyK4i9sTO8gl7TFOKO5Q64VPvSDQ==
+"@cloudflare/workerd-linux-arm64@1.20260421.1":
+  version "1.20260421.1"
+  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-linux-arm64/-/workerd-linux-arm64-1.20260421.1.tgz#f7368ffe9d6100a51aa93bd13ebd5a3e189c4469"
+  integrity sha512-YI4+mLfwnJcKJ+iPyxzx+tp2Jy4o29BxBPSQGZxl/AZyvZ9eTKsmNZmtjEiT4i3O/M0tdO/B/d9ESDHbRCs2rQ==
 
-"@cloudflare/workerd-linux-64@1.20260410.1":
-  version "1.20260410.1"
-  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-linux-64/-/workerd-linux-64-1.20260410.1.tgz#4a4c80eed2d0c70edfa990814518b8c96f1fe077"
-  integrity sha512-qWORRcAzPZeHJjrcYBNZTN6Y9l+iZQUz4KBdWbNrM6My4CpNrXS5kErPR373vG//5QPaDGwMXgBqyn9xfzarJQ==
+"@cloudflare/workerd-windows-64@1.20260421.1":
+  version "1.20260421.1"
+  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-windows-64/-/workerd-windows-64-1.20260421.1.tgz#0f2780fec52af191df47f7eec244cf7e5b0f50eb"
+  integrity sha512-q1SFgwlNH9lFmw74vh7EJbJtduo92Nx51mNOfd3/u6pux6AldcwRviYzKEEv3FEbtv6OBB7J8D5f8vtZj7Z6Sg==
 
-"@cloudflare/workerd-linux-64@1.20260415.1":
-  version "1.20260415.1"
-  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-linux-64/-/workerd-linux-64-1.20260415.1.tgz#4846f2f163495940b94a43973c7e259531a22fc3"
-  integrity sha512-tU+9pwsqCy8afOVlGtiWrWQc/fedQK4SRm4KPIAt+zOiQWDxWASm6YGBUJis5c648WN80yz47qnmdDi8DQNOcA==
-
-"@cloudflare/workerd-linux-arm64@1.20260410.1":
-  version "1.20260410.1"
-  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-linux-arm64/-/workerd-linux-arm64-1.20260410.1.tgz#02e93769b596c7d7a2b96240fa567fbd3fa4c0f0"
-  integrity sha512-jQfuHL4mnGDFyomSS3JNs9TpTvCu6Vzz2QSNCfJRstMzTICUFLMc4Vp/xKK+M5xkb0PoAu/G0hHx7jrxB2j+OQ==
-
-"@cloudflare/workerd-linux-arm64@1.20260415.1":
-  version "1.20260415.1"
-  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-linux-arm64/-/workerd-linux-arm64-1.20260415.1.tgz#97729ca182bd0aa6702a7af90aa857c2a83d618a"
-  integrity sha512-bR9uITnV19r5NQ14xnypi2xHXu2iQvfYV8cVgx0JouFUmWwTEEAwFVojDdssGq93VHX9hr/pi2IRUZeegbYBog==
-
-"@cloudflare/workerd-windows-64@1.20260410.1":
-  version "1.20260410.1"
-  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-windows-64/-/workerd-windows-64-1.20260410.1.tgz#76dd6f04b269ab388b2340707f872fa1f15acc76"
-  integrity sha512-h8q/nbheDqpknY7AAOz19MuQkZAR1/bnoZnKipyeUPXt5No+y6HlTtva9Bohx5Fhc1MW2CX2MQVdb55qtkkqZQ==
-
-"@cloudflare/workerd-windows-64@1.20260415.1":
-  version "1.20260415.1"
-  resolved "https://registry.yarnpkg.com/@cloudflare/workerd-windows-64/-/workerd-windows-64-1.20260415.1.tgz#0844fae5b502ce11746ec4ce3b4bcfab77966771"
-  integrity sha512-4NuMLlerI0Ijua3Ir8HXQ+qyNvCUDEG5gDco5Om+sAiK6rnWiz+aGoSlbB8W16yW9QAgzCstbmXLiVknUBflfQ==
-
-"@cloudflare/workers-types@^4.20250410.0":
-  version "4.20260415.1"
-  resolved "https://registry.npmjs.org/@cloudflare/workers-types/-/workers-types-4.20260415.1.tgz"
-  integrity sha512-9sEq9cZzr4s075U/TfjvdSmiX+u2NMOAIcFcCfd24FDtPfR7Iw3SbuQxkcgtpx/Bvg0au9PmQ0ZJfBaIitG0gw==
+"@cloudflare/workers-types@^4.20260423.1":
+  version "4.20260423.1"
+  resolved "https://registry.yarnpkg.com/@cloudflare/workers-types/-/workers-types-4.20260423.1.tgz#cfe11ca17313f5ca20d04f8d2cba59ff1b126e5e"
+  integrity sha512-SHIc0NeJMtn0sW043eWtMxYFbJ9VPSLkcx+FEqCk0uZLD3HrWT+5xWhm6EYiOYDg0vnrlXNHcu2ly/01zDh3bw==
 
 "@codemirror/autocomplete@^6.0.0":
   version "6.20.1"
@@ -2310,63 +2285,63 @@
     "@rolldown/pluginutils" "1.0.0-beta.27"
     "@swc/core" "^1.12.11"
 
-"@vitest/expect@4.1.4":
-  version "4.1.4"
-  resolved "https://registry.npmjs.org/@vitest/expect/-/expect-4.1.4.tgz"
-  integrity sha512-iPBpra+VDuXmBFI3FMKHSFXp3Gx5HfmSCE8X67Dn+bwephCnQCaB7qWK2ldHa+8ncN8hJU8VTMcxjPpyMkUjww==
+"@vitest/expect@4.1.5":
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/@vitest/expect/-/expect-4.1.5.tgz#5caab19535cfb04fbc37087c5608d46e74dc9292"
+  integrity sha512-PWBaRY5JoKuRnHlUHfpV/KohFylaDZTupcXN1H9vYryNLOnitSw60Mw9IAE2r67NbwwzBw/Cc/8q9BK3kIX8Kw==
   dependencies:
     "@standard-schema/spec" "^1.1.0"
     "@types/chai" "^5.2.2"
-    "@vitest/spy" "4.1.4"
-    "@vitest/utils" "4.1.4"
+    "@vitest/spy" "4.1.5"
+    "@vitest/utils" "4.1.5"
     chai "^6.2.2"
     tinyrainbow "^3.1.0"
 
-"@vitest/mocker@4.1.4":
-  version "4.1.4"
-  resolved "https://registry.npmjs.org/@vitest/mocker/-/mocker-4.1.4.tgz"
-  integrity sha512-R9HTZBhW6yCSGbGQnDnH3QHfJxokKN4KB+Yvk9Q1le7eQNYwiCyKxmLmurSpFy6BzJanSLuEUDrD+j97Q+ZLPg==
+"@vitest/mocker@4.1.5":
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/@vitest/mocker/-/mocker-4.1.5.tgz#9d5791733e4866cfb8af2d48ca371b127e7d2e93"
+  integrity sha512-/x2EmFC4mT4NNzqvC3fmesuV97w5FC903KPmey4gsnJiMQ3Be1IlDKVaDaG8iqaLFHqJ2FVEkxZk5VmeLjIItw==
   dependencies:
-    "@vitest/spy" "4.1.4"
+    "@vitest/spy" "4.1.5"
     estree-walker "^3.0.3"
     magic-string "^0.30.21"
 
-"@vitest/pretty-format@4.1.4":
-  version "4.1.4"
-  resolved "https://registry.npmjs.org/@vitest/pretty-format/-/pretty-format-4.1.4.tgz"
-  integrity sha512-ddmDHU0gjEUyEVLxtZa7xamrpIefdEETu3nZjWtHeZX4QxqJ7tRxSteHVXJOcr8jhiLoGAhkK4WJ3WqBpjx42A==
+"@vitest/pretty-format@4.1.5":
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/@vitest/pretty-format/-/pretty-format-4.1.5.tgz#4c13d77a77e2931e44db95522ed5700bcf0570d4"
+  integrity sha512-7I3q6l5qr03dVfMX2wCo9FxwSJbPdwKjy2uu/YPpU3wfHvIL4QHwVRp57OfGrDFeUJ8/8QdfBKIV12FTtLn00g==
   dependencies:
     tinyrainbow "^3.1.0"
 
-"@vitest/runner@4.1.4", "@vitest/runner@^4.1.4":
-  version "4.1.4"
-  resolved "https://registry.npmjs.org/@vitest/runner/-/runner-4.1.4.tgz"
-  integrity sha512-xTp7VZ5aXP5ZJrn15UtJUWlx6qXLnGtF6jNxHepdPHpMfz/aVPx+htHtgcAL2mDXJgKhpoo2e9/hVJsIeFbytQ==
+"@vitest/runner@4.1.5", "@vitest/runner@^4.1.5":
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/@vitest/runner/-/runner-4.1.5.tgz#a14dd2d2f48603f906dd52304a10c7fc623bb1de"
+  integrity sha512-2D+o7Pr82IEO46YPpoA/YU0neeyr6FTerQb5Ro7BUnBuv6NQtT/kmVnczngiMEBhzgqz2UZYl5gArejsyERDSQ==
   dependencies:
-    "@vitest/utils" "4.1.4"
+    "@vitest/utils" "4.1.5"
     pathe "^2.0.3"
 
-"@vitest/snapshot@4.1.4", "@vitest/snapshot@^4.1.4":
-  version "4.1.4"
-  resolved "https://registry.npmjs.org/@vitest/snapshot/-/snapshot-4.1.4.tgz"
-  integrity sha512-MCjCFgaS8aZz+m5nTcEcgk/xhWv0rEH4Yl53PPlMXOZ1/Ka2VcZU6CJ+MgYCZbcJvzGhQRjVrGQNZqkGPttIKw==
+"@vitest/snapshot@4.1.5", "@vitest/snapshot@^4.1.5":
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/@vitest/snapshot/-/snapshot-4.1.5.tgz#d07970d1448190ee5a258db6ab79c65b8018c13b"
+  integrity sha512-zypXEt4KH/XgKGPUz4eC2AvErYx0My5hfL8oDb1HzGFpEk1P62bxSohdyOmvz+d9UJwanI68MKwr2EquOaOgMQ==
   dependencies:
-    "@vitest/pretty-format" "4.1.4"
-    "@vitest/utils" "4.1.4"
+    "@vitest/pretty-format" "4.1.5"
+    "@vitest/utils" "4.1.5"
     magic-string "^0.30.21"
     pathe "^2.0.3"
 
-"@vitest/spy@4.1.4":
-  version "4.1.4"
-  resolved "https://registry.npmjs.org/@vitest/spy/-/spy-4.1.4.tgz"
-  integrity sha512-XxNdAsKW7C+FLydqFJLb5KhJtl3PGCMmYwFRfhvIgxJvLSXhhVI1zM8f1qD3Zg7RCjTSzDVyct6sghs9UEgBEQ==
+"@vitest/spy@4.1.5":
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/@vitest/spy/-/spy-4.1.5.tgz#fa7858ffab746fa9ac29496e626f5a0caf9a5a7f"
+  integrity sha512-2lNOsh6+R2Idnf1TCZqSwYlKN2E/iDlD8sgU59kYVl+OMDmvldO1VDk39smRfpUNwYpNRVn3w4YfuC7KfbBnkQ==
 
-"@vitest/utils@4.1.4":
-  version "4.1.4"
-  resolved "https://registry.npmjs.org/@vitest/utils/-/utils-4.1.4.tgz"
-  integrity sha512-13QMT+eysM5uVGa1rG4kegGYNp6cnQcsTc67ELFbhNLQO+vgsygtYJx2khvdt4gVQqSSpC/KT5FZZxUpP3Oatw==
+"@vitest/utils@4.1.5":
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/@vitest/utils/-/utils-4.1.5.tgz#20d6a6ae651a0dd33f945548921698d49701fa43"
+  integrity sha512-76wdkrmfXfqGjueGgnb45ITPyUi1ycZ4IHgC2bhPDUfWHklY/q3MdLOAB+TF1e6xfl8NxNY0ZYaPCFNWSsw3Ug==
   dependencies:
-    "@vitest/pretty-format" "4.1.4"
+    "@vitest/pretty-format" "4.1.5"
     convert-source-map "^2.0.0"
     tinyrainbow "^3.1.0"
 
@@ -2429,18 +2404,18 @@ baseline-browser-mapping@^2.10.12:
   resolved "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.10.19.tgz"
   integrity sha512-qCkNLi2sfBOn8XhZQ0FXsT1Ki/Yo5P90hrkRamVFRS7/KV9hpfA4HkoWNU152+8w0zPjnxo5psx5NL3PSGgv5g==
 
-better-auth@^1.6.3:
-  version "1.6.3"
-  resolved "https://registry.npmjs.org/better-auth/-/better-auth-1.6.3.tgz"
-  integrity sha512-jMsoSYQyO8nNRuLEoCP+OUShLyeIGU8ioPYqra0IteLjnS3WNjHj21YE/COSJ/V/f0H5SInZiF+uXcEEHREDMQ==
+better-auth@^1.6.7:
+  version "1.6.7"
+  resolved "https://registry.yarnpkg.com/better-auth/-/better-auth-1.6.7.tgz#b1bc64fcf5c1f4f38acd9cf22dd0cb1081c9d519"
+  integrity sha512-YG8k/mMNBQjwcCR22/vqFdR75ljy0No3Rf7sJNleHYraaehfPLrcd/EBOHzV56BOOIKChV3OO0sNlpHQVV2zuw==
   dependencies:
-    "@better-auth/core" "1.6.3"
-    "@better-auth/drizzle-adapter" "1.6.3"
-    "@better-auth/kysely-adapter" "1.6.3"
-    "@better-auth/memory-adapter" "1.6.3"
-    "@better-auth/mongo-adapter" "1.6.3"
-    "@better-auth/prisma-adapter" "1.6.3"
-    "@better-auth/telemetry" "1.6.3"
+    "@better-auth/core" "1.6.7"
+    "@better-auth/drizzle-adapter" "1.6.7"
+    "@better-auth/kysely-adapter" "1.6.7"
+    "@better-auth/memory-adapter" "1.6.7"
+    "@better-auth/mongo-adapter" "1.6.7"
+    "@better-auth/prisma-adapter" "1.6.7"
+    "@better-auth/telemetry" "1.6.7"
     "@better-auth/utils" "0.4.0"
     "@better-fetch/fetch" "1.1.21"
     "@noble/ciphers" "^2.1.1"
@@ -3082,27 +3057,15 @@ mimic-function@^5.0.0:
   resolved "https://registry.yarnpkg.com/mimic-function/-/mimic-function-5.0.1.tgz#acbe2b3349f99b9deaca7fb70e48b83e94e67076"
   integrity sha512-VP79XUPxV2CigYP3jWwAUFSku2aKqBH7uTAapFWCBqutsbmDo96KY5o8uh6U+/YSIn5OxJnXp73beVkpqMIGhA==
 
-miniflare@4.20260410.0:
-  version "4.20260410.0"
-  resolved "https://registry.npmjs.org/miniflare/-/miniflare-4.20260410.0.tgz"
-  integrity sha512-94LEU8d+XPVGp18eW4+bu1v7Tnq7srhqWMIsrx2jhSkdbTnGqg1I613R0GKY4eygBYl9MbqXEhzK/bczJb6uMg==
-  dependencies:
-    "@cspotcode/source-map-support" "0.8.1"
-    sharp "^0.34.5"
-    undici "7.24.4"
-    workerd "1.20260410.1"
-    ws "8.18.0"
-    youch "4.1.0-beta.10"
-
-miniflare@4.20260415.0:
-  version "4.20260415.0"
-  resolved "https://registry.npmjs.org/miniflare/-/miniflare-4.20260415.0.tgz"
-  integrity sha512-JoExRWN4YBI2luA5BoSMFEgi8rQWXUGzo3mtE+58VXCLV3jj/Xnk5Yeqs/IXWz8Es5GJIaq6BtsixDvAxXSIng==
+miniflare@4.20260421.0:
+  version "4.20260421.0"
+  resolved "https://registry.yarnpkg.com/miniflare/-/miniflare-4.20260421.0.tgz#adadc9c24f19423bda916c17e477c274830023cb"
+  integrity sha512-7ZkNQ7brgQ2hh5ha9iQCDUjxBkLvuiG2VdDns9esRL8O8lXg+MoP6E0dO1rtp+ZY2I+vV1tPWr6td5IojkewLw==
   dependencies:
     "@cspotcode/source-map-support" "0.8.1"
     sharp "^0.34.5"
     undici "7.24.8"
-    workerd "1.20260415.1"
+    workerd "1.20260421.1"
     ws "8.18.0"
     youch "4.1.0-beta.10"
 
@@ -3746,11 +3709,6 @@ uc.micro@^2.0.0, uc.micro@^2.1.0:
   resolved "https://registry.npmjs.org/uc.micro/-/uc.micro-2.1.0.tgz"
   integrity sha512-ARDJmphmdvUk6Glw7y9DQ2bFkKBHwQHLi2lsaH6PPmz/Ka9sFOBsBluozhDltWmnv9u/cF6Rt87znRTPV+yp/A==
 
-undici@7.24.4:
-  version "7.24.4"
-  resolved "https://registry.npmjs.org/undici/-/undici-7.24.4.tgz"
-  integrity sha512-BM/JzwwaRXxrLdElV2Uo6cTLEjhSb3WXboncJamZ15NgUURmvlXvxa6xkwIOILIjPNo9i8ku136ZvWV0Uly8+w==
-
 undici@7.24.8:
   version "7.24.8"
   resolved "https://registry.npmjs.org/undici/-/undici-7.24.8.tgz"
@@ -3810,18 +3768,18 @@ uuid@^10.0.0:
   optionalDependencies:
     fsevents "~2.3.3"
 
-vitest@^4.1.4:
-  version "4.1.4"
-  resolved "https://registry.npmjs.org/vitest/-/vitest-4.1.4.tgz"
-  integrity sha512-tFuJqTxKb8AvfyqMfnavXdzfy3h3sWZRWwfluGbkeR7n0HUev+FmNgZ8SDrRBTVrVCjgH5cA21qGbCffMNtWvg==
+vitest@^4.1.5:
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/vitest/-/vitest-4.1.5.tgz#cda189c0cd9dd1c920be477c0f371b64ec14782a"
+  integrity sha512-9Xx1v3/ih3m9hN+SbfkUyy0JAs72ap3r7joc87XL6jwF0jGg6mFBvQ1SrwaX+h8BlkX6Hz9shdd1uo6AF+ZGpg==
   dependencies:
-    "@vitest/expect" "4.1.4"
-    "@vitest/mocker" "4.1.4"
-    "@vitest/pretty-format" "4.1.4"
-    "@vitest/runner" "4.1.4"
-    "@vitest/snapshot" "4.1.4"
-    "@vitest/spy" "4.1.4"
-    "@vitest/utils" "4.1.4"
+    "@vitest/expect" "4.1.5"
+    "@vitest/mocker" "4.1.5"
+    "@vitest/pretty-format" "4.1.5"
+    "@vitest/runner" "4.1.5"
+    "@vitest/snapshot" "4.1.5"
+    "@vitest/spy" "4.1.5"
+    "@vitest/utils" "4.1.5"
     es-module-lexer "^2.0.0"
     expect-type "^1.3.0"
     magic-string "^0.30.21"
@@ -3849,57 +3807,30 @@ why-is-node-running@^2.3.0:
     siginfo "^2.0.0"
     stackback "0.0.2"
 
-workerd@1.20260410.1:
-  version "1.20260410.1"
-  resolved "https://registry.npmjs.org/workerd/-/workerd-1.20260410.1.tgz"
-  integrity sha512-T/GRD6Y5vN9g4CnGmOlfST1w7bj+1IjRFvX0K7CodZPJuPVPNPGhz8Wppah0WdT6A7I8Kad3zgZ2OkDdWtENrg==
+workerd@1.20260421.1:
+  version "1.20260421.1"
+  resolved "https://registry.yarnpkg.com/workerd/-/workerd-1.20260421.1.tgz#922f46fcf3fc1598531df26060a66cac0cb107d8"
+  integrity sha512-zTYD+xFR4d7TUCxsyl7FTPth9a8CDgk8pM7xUWbJxo0SGUx+2e5C7Q5LrramBZwmuAErtzXmOjlQ15PtkPAhZA==
   optionalDependencies:
-    "@cloudflare/workerd-darwin-64" "1.20260410.1"
-    "@cloudflare/workerd-darwin-arm64" "1.20260410.1"
-    "@cloudflare/workerd-linux-64" "1.20260410.1"
-    "@cloudflare/workerd-linux-arm64" "1.20260410.1"
-    "@cloudflare/workerd-windows-64" "1.20260410.1"
+    "@cloudflare/workerd-darwin-64" "1.20260421.1"
+    "@cloudflare/workerd-darwin-arm64" "1.20260421.1"
+    "@cloudflare/workerd-linux-64" "1.20260421.1"
+    "@cloudflare/workerd-linux-arm64" "1.20260421.1"
+    "@cloudflare/workerd-windows-64" "1.20260421.1"
 
-workerd@1.20260415.1:
-  version "1.20260415.1"
-  resolved "https://registry.npmjs.org/workerd/-/workerd-1.20260415.1.tgz"
-  integrity sha512-phyPjRnx+mQDfkhN9ENPioL1L0SdhYs4S0YmJK/xF9Oga+ykNfdSy1MHnsOj8yqnOV96zcVQMx32dJ0r3pq0jQ==
-  optionalDependencies:
-    "@cloudflare/workerd-darwin-64" "1.20260415.1"
-    "@cloudflare/workerd-darwin-arm64" "1.20260415.1"
-    "@cloudflare/workerd-linux-64" "1.20260415.1"
-    "@cloudflare/workerd-linux-arm64" "1.20260415.1"
-    "@cloudflare/workerd-windows-64" "1.20260415.1"
-
-wrangler@4.82.2, wrangler@^4.14.0:
-  version "4.82.2"
-  resolved "https://registry.npmjs.org/wrangler/-/wrangler-4.82.2.tgz"
-  integrity sha512-SKfW21sTJUkM/Qd8zc9oc8TBkAWHRsXuTxE6XdToC55Ct84pR+IfRdaTjCTuC0dL+KYvauSvSn2rtqS2Ae+Dcw==
+wrangler@4.84.1, wrangler@^4.14.0:
+  version "4.84.1"
+  resolved "https://registry.yarnpkg.com/wrangler/-/wrangler-4.84.1.tgz#2ea088ec24b027ccfaa0c3b1672bacf9f659c836"
+  integrity sha512-Xe1S/Bik7pNdtdJ+asHsEZC2dX9k3WxYn2BbxFtOrrLVxN/LKi750zsrjX41jSAk00M/O1l7jzyQV4sQqw8ftg==
   dependencies:
     "@cloudflare/kv-asset-handler" "0.4.2"
     "@cloudflare/unenv-preset" "2.16.0"
     blake3-wasm "2.1.5"
     esbuild "0.27.3"
-    miniflare "4.20260410.0"
+    miniflare "4.20260421.0"
     path-to-regexp "6.3.0"
     unenv "2.0.0-rc.24"
-    workerd "1.20260410.1"
-  optionalDependencies:
-    fsevents "~2.3.2"
-
-wrangler@4.83.0:
-  version "4.83.0"
-  resolved "https://registry.npmjs.org/wrangler/-/wrangler-4.83.0.tgz"
-  integrity sha512-gw5g3LCiuAqVWxaoKY6+quE0HzAUEFb/FV3oAlNkE1ttd4XP3FiV91XDkkzUCcdqxS4WjhQvPhIDBNdhEi8P0A==
-  dependencies:
-    "@cloudflare/kv-asset-handler" "0.4.2"
-    "@cloudflare/unenv-preset" "2.16.0"
-    blake3-wasm "2.1.5"
-    esbuild "0.27.3"
-    miniflare "4.20260415.0"
-    path-to-regexp "6.3.0"
-    unenv "2.0.0-rc.24"
-    workerd "1.20260415.1"
+    workerd "1.20260421.1"
   optionalDependencies:
     fsevents "~2.3.2"
 
