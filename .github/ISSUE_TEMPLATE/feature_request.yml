@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an enhancement or new capability for saasmail
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the user-facing pain point or workflow gap, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How would you like saasmail to behave? API shape, UI sketch, or example config are all welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you tried, or adjacent approaches you rejected and why.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, links to prior art in other tools, or anything else that helps frame the request.
