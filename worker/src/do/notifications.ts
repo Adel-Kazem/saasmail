@@ -56,9 +56,10 @@ export class NotificationsHub implements DurableObject {
       bodyPreview: string;
     };
 
-    // Presence check: any live WS for this user?
+    // Fan out to any live WebSocket clients (best-effort, non-blocking for push).
     const sockets = this.ctx.getWebSockets();
-    if (sockets.length > 0) {
+    const wsCount = sockets.length;
+    if (wsCount > 0) {
       // Back-compat frame shape — useRealtimeUpdates already handles this.
       const frame = JSON.stringify({
         type: "email_received",
@@ -69,18 +70,20 @@ export class NotificationsHub implements DurableObject {
           ws.send(frame);
         } catch {}
       }
-      return Response.json({ via: "ws" });
     }
 
-    // No WS: fall back to Web Push. Read this user's subscriptions.
+    // Always attempt Web Push as well — a connected WS tab may be backgrounded,
+    // the user may have other devices, or the socket may be a stale hibernated one.
     const userId = this.ctx.id.name; // DO id is idFromName(userId)
-    if (!userId) return Response.json({ via: "none" });
+    if (!userId) {
+      return Response.json({ via: wsCount > 0 ? "ws" : "none", wsCount });
+    }
 
     const vapidPublic = this.env.VAPID_PUBLIC_KEY ?? "";
     const vapidPrivate = this.env.VAPID_PRIVATE_KEY ?? "";
     const vapidSubject = this.env.VAPID_SUBJECT ?? "";
     if (!vapidPublic || !vapidPrivate || !vapidSubject) {
-      return Response.json({ via: "none" });
+      return Response.json({ via: wsCount > 0 ? "ws" : "none", wsCount });
     }
 
     const db = drizzle(this.env.DB, { schema });
@@ -89,7 +92,9 @@ export class NotificationsHub implements DurableObject {
       .from(pushSubscriptions)
       .where(eq(pushSubscriptions.userId, userId));
 
-    if (subs.length === 0) return Response.json({ via: "none" });
+    if (subs.length === 0) {
+      return Response.json({ via: wsCount > 0 ? "ws" : "none", wsCount });
+    }
 
     const vapid: VapidConfig = {
       publicKey: vapidPublic,
@@ -142,7 +147,7 @@ export class NotificationsHub implements DurableObject {
       // 401/403/0/other: leave the row, log-only.
     }
 
-    return Response.json({ via: "push", sent, pruned });
+    return Response.json({ via: "push", sent, pruned, wsCount });
   }
 
   webSocketMessage(_ws: WebSocket, _message: string | ArrayBuffer) {}

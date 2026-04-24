@@ -39,6 +39,53 @@ describe("NotificationsHub /deliver", () => {
     expect(json.via).toBe("none");
   });
 
+  it("attempts push even when a WS is connected", async () => {
+    const { userId } = await createTestUser({ role: "member" });
+    const db = drizzle(env.DB, { schema });
+    await db.insert(pushSubscriptions).values({
+      id: crypto.randomUUID(),
+      userId,
+      endpoint: "http://127.0.0.1:1/not-a-real-push-endpoint",
+      p256dh: "BPqc0jv9h6cJmQmC2WQqIn-example-public-key-32-bytes==",
+      auth: "dGVzdC1hdXRoLXNlY3JldA",
+      userAgent: null,
+      createdAt: Math.floor(Date.now() / 1000),
+      lastUsedAt: null,
+    });
+
+    const stub = env.NOTIFICATIONS_HUB.get(
+      env.NOTIFICATIONS_HUB.idFromName(userId),
+    );
+
+    // Open a WS to the DO so sockets.length > 0 for the next /deliver call.
+    const wsRes = await stub.fetch(
+      new Request("http://do/connect", {
+        headers: { Upgrade: "websocket" },
+      }),
+    );
+    expect(wsRes.status).toBe(101);
+
+    const res = await stub.fetch(
+      new Request("http://do/deliver", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(DELIVER_PAYLOAD),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      via: string;
+      wsCount: number;
+      sent?: number;
+      pruned?: number;
+    };
+    // Even with a live WS, we still exercise the push path.
+    expect(json.via).toBe("push");
+    expect(json.wsCount).toBeGreaterThan(0);
+    expect(typeof json.sent).toBe("number");
+    expect(typeof json.pruned).toBe("number");
+  });
+
   it("returns {via:'push', sent:N} and prunes 404s", async () => {
     const { userId } = await createTestUser({ role: "member" });
     const db = drizzle(env.DB, { schema });
