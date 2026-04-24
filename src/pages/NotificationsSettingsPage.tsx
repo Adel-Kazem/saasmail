@@ -20,6 +20,7 @@ export default function NotificationsSettingsPage() {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [busy, setBusy] = useState(false);
   const [vapidPublicKey, setVapidPublicKey] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
     const cfg = await fetch("/api/notifications/config", {
@@ -45,6 +46,9 @@ export default function NotificationsSettingsPage() {
       </div>
     );
   }
+  if (pushEnabled === null) {
+    return <div className="p-6 text-sm text-text-secondary">Loading…</div>;
+  }
   if (pushEnabled === false) {
     return (
       <div className="p-6 text-sm text-text-secondary">
@@ -54,25 +58,39 @@ export default function NotificationsSettingsPage() {
   }
 
   async function onEnable() {
+    setError(null);
     setBusy(true);
-    await enablePush();
-    await refresh();
-    setBusy(false);
+    try {
+      const result = await enablePush();
+      if (!result.ok) {
+        setError(result.reason);
+        return;
+      }
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
   }
   async function onDisable() {
     setBusy(true);
-    await disablePush();
-    await refresh();
-    setBusy(false);
+    try {
+      await disablePush();
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
   }
   async function onRevoke(id: string) {
     setBusy(true);
-    await fetch(`/api/notifications/subscriptions/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    await refresh();
-    setBusy(false);
+    try {
+      await fetch(`/api/notifications/subscriptions/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -86,6 +104,7 @@ export default function NotificationsSettingsPage() {
             ? "Push is on for this browser."
             : "Push is off for this browser."}
         </p>
+        {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
         <div className="mt-3">
           {subscribedHere ? (
             <button
