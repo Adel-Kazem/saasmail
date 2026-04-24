@@ -185,6 +185,13 @@ export default function Sidebar({ onCompose }: SidebarProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start">
             <DropdownMenuItem
+              data-testid="settings-button"
+              onClick={() => navigate("/settings")}
+            >
+              <Settings size={14} />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem
               data-testid="logout-button"
               onClick={() => signOut()}
             >
