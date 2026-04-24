@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { b64urlEncode, b64urlDecode, signVapidJwt } from "../lib/web-push";
+import {
+  b64urlEncode,
+  b64urlDecode,
+  signVapidJwt,
+  encryptAes128Gcm,
+  decryptAes128Gcm,
+} from "../lib/web-push";
 
 describe("web-push: base64url", () => {
   it("round-trips binary data", () => {
@@ -58,5 +64,44 @@ describe("web-push: VAPID JWT", () => {
       data,
     );
     expect(ok).toBe(true);
+  });
+});
+
+describe("web-push: aes128gcm", () => {
+  it("encrypt/decrypt round-trip with a freshly generated recipient key", async () => {
+    // Recipient keypair simulating the browser's push subscription.
+    const recipient = await crypto.subtle.generateKey(
+      { name: "ECDH", namedCurve: "P-256" },
+      true,
+      ["deriveBits"],
+    );
+    const recipientRaw = new Uint8Array(
+      await crypto.subtle.exportKey("raw", recipient.publicKey),
+    );
+    const recipientJwk = (await crypto.subtle.exportKey(
+      "jwk",
+      recipient.privateKey,
+    )) as { d: string };
+
+    const auth = crypto.getRandomValues(new Uint8Array(16));
+    const plaintext = new TextEncoder().encode(
+      JSON.stringify({ hello: "world" }),
+    );
+
+    const body = await encryptAes128Gcm({
+      recipientPublicRaw: recipientRaw,
+      authSecret: auth,
+      plaintext,
+    });
+
+    const decoded = await decryptAes128Gcm({
+      body,
+      recipientPrivateJwkD: recipientJwk.d,
+      recipientPublicRaw: recipientRaw,
+      authSecret: auth,
+    });
+    expect(new TextDecoder().decode(decoded)).toBe(
+      JSON.stringify({ hello: "world" }),
+    );
   });
 });
